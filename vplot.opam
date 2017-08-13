@@ -1,0 +1,20 @@
+opam-version: "1.2"
+maintainer: "ilias.gar@gmail.com"
+authors: ["Ilias Garnier"]
+homepage: "https://github.com/igarnier/vplot"
+bug-reports: "https://github.com/igarnier/vplot/issues"
+dev-repo: "git+https://github.com/igarnier/vplot.git"
+license: "Apache-2.0"
+build: [
+  ["jbuilder" "build" "-p" name "-j" jobs]
+]
+depends: [
+  "jbuilder"                {build & >= "1.0+beta8"}
+  "cairo2"
+  "tsdl"
+  "vlayout"
+]
+available: [ ocaml-version >= "4.04.1" ]
+descr: "
+Declarative interface to Cairo.
+"

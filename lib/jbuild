@@ -1,0 +1,6 @@
+(jbuild_version 1)
+
+(library
+ ((name        vplot)
+  (public_name vplot)
+  (libraries (vlayout cairo2 tsdl))))
