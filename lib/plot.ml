@@ -159,15 +159,28 @@ module Heatmap =
       done;
       palette
 
-    (* TODO: make this a parameter of the program  *)
-    let max_value = 10.0
+    let min : float -> float -> float =
+      fun x y ->
+      if x < y then x else y
 
-    let normalise x = -. 1. /. (30. *. x +. 1.) +. 1.
-
-    let float_to_color f =
-      let f = max 0.0 (min max_value f) in
-      let r = normalise (f /. max_value) in
-      palette.(int_of_float (r *. 255.))
+    let max : float -> float -> float =
+      fun x y ->
+      if x > y then x else y
+        
+    let float_to_color minv maxv f =
+      if f > 0.0 then
+        let f = min maxv f in
+        let f = max minv f in
+        let f = (f -. minv) /. (maxv -. minv) in
+        let r = Int32.of_float (f *. 255.0) in
+        rgb r 0l 0l
+      else
+        let f = -. f in
+        let f = min maxv f in
+        let f = max minv f in
+        let f = (f -. minv) /. (maxv -. minv) in
+        let b = Int32.of_float (f *. 255.0) in
+        rgb 0l 0l b
 
     open Bigarray
              
@@ -175,16 +188,34 @@ module Heatmap =
 
     type 'a ticks = (float, 'a, c_layout) Array1.t
 
-    let heatmap ~frame_clr ~xticks ~yticks ~xdomain ~ydomain ~data =
+    let heatmap ~frame_clr ~minv ~maxv ~xticks ~yticks ~xdomain ~ydomain ~data =
       let xlength    = Array1.dim xdomain in
       let ylength    = Array1.dim ydomain in
+      let xdata      = Array2.dim1 data in
+      let ydata      = Array2.dim2 data in
+      if xlength <> xdata || ylength <> ydata then
+        failwith (Sdl.log "invalid heatmap params: |xdomain| = %d, |ydomain| = %d, |data| = %dx%d" xlength ylength xdata ydata; exit 1)
+      else ();
+      (* get min/max value in data *)
+      (* let minv = ref max_float in *)
+      (* let maxv = ref (-. max_float) in *)
+      (* for i = 0 to xlength - 1 do *)
+      (*   for j = 0 to ylength - 1 do *)
+      (*     let f = data.{i, j} in *)
+      (*     minv := min !minv f; *)
+      (*     maxv := max !maxv f *)
+      (*   done *)
+      (* done; *)
+      (* let minv       = !minv in *)
+      (* let maxv       = !maxv in *)
+      (* let idelta     = 1.0 /. (maxv -. minv) in *)
       let xrange     = { low = xdomain.{0}; high = xdomain.{xlength - 1} } in
       let yrange     = { low = ydomain.{0}; high = ydomain.{ylength - 1} } in
-      let plot_image = Image.create 500 500 in
+      let plot_image = Image.create xlength ylength in
       for i = 0 to xlength - 1 do
         for j = 0 to ylength - 1 do
-          let f = data.{j, i} in
-          let c = float_to_color f in
+          let f = data.{i, j} in
+          let c = float_to_color minv maxv f in
           Image.set plot_image i j c
         done
       done;
@@ -199,7 +230,7 @@ module Heatmap =
   end
     
 let init ~window_width ~window_height =
-  (* Init SDL video *)  
+  (* Init SDL video *) 
   match Sdl.init Sdl.Init.video with
   | Error (`Msg msg) -> Sdl.log "Init error: %s" msg; exit 1
   | Ok () ->
@@ -212,7 +243,8 @@ let init ~window_width ~window_height =
      in
      match window_result with
      | Error (`Msg msg) -> Sdl.log "Create window error: %s" msg; exit 1
-     | Ok window -> Sdl { window }
+     | Ok window ->
+        Sdl { window }
 
 let render_layout_centered ctx xmargin ymargin layout =
   let (cmds, bbox) = Commands.emit_commands_with_bbox layout in
@@ -250,6 +282,8 @@ let display ~window ~plots =
   let sdl_pixels =
     Sdl.get_surface_pixels window_surface Bigarray.int32
   in
+  (* TODO: fix this. *)  
+  let _ = Bigarray.Array1.fill sdl_pixels 0l in
   (* 3. reshape bigarray to match Cairo's expectations *)
   let sdl_pixels =
     let genarray = Bigarray.genarray_of_array1 sdl_pixels in
