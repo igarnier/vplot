@@ -18,13 +18,23 @@ module Commands = Commands.Make(Name)
 
 module Backend = Backends.Cairo(Commands)
 
+
+
+type color  = float * float * float
+
+type domain = (float, Bigarray.float64_elt, Bigarray.c_layout) Bigarray.Array1.t
+
+type data1d = (float, Bigarray.float64_elt, Bigarray.c_layout) Bigarray.Array1.t
+
+type data2d = (float, Bigarray.float64_elt, Bigarray.c_layout) Bigarray.Array2.t
+                               
 type target =
-  | Sdl of { window : Tsdl.Sdl.window }
+  | Sdl of { window   : Tsdl.Sdl.window }
+  | Pdf of { filename : string }             
                                
 type window = Tsdl.Sdl.surface
 
 type plot = Commands.layout
-                               
                                
 type range = { low : float; high : float }
 
@@ -82,15 +92,12 @@ let axis ~xrange ~yrange ~xticks ~yticks ~xlength ~ylength ~clr ~data =
                        ) [] pos_y ticks_y
     in
     let (r, g, b) = clr in
-    let clr = color r g b in
     cmd ~name:None
-        ([ clr;
-           x_segment;
-           y_segment ]
-         @ xtick_cmds
-         @ ytick_cmds
-         @ data
-        )
+        ([ style
+             ~style:Style.(make ~stroke:(solid_stroke ~clr:(rgb r g b)) ~fill:None)
+             ~subcommands:
+             ([ x_segment; y_segment ] @ xtick_cmds @ ytick_cmds)
+         ] @ data)
   )
 
 
@@ -194,7 +201,7 @@ module Heatmap =
       let xdata      = Array2.dim1 data in
       let ydata      = Array2.dim2 data in
       if xlength <> xdata || ylength <> ydata then
-        failwith (Sdl.log "invalid heatmap params: |xdomain| = %d, |ydomain| = %d, |data| = %dx%d" xlength ylength xdata ydata; exit 1)
+        failwith (Sdl.log "invalid heatmap size: |xdomain| = %d, |ydomain| = %d, |data| = %dx%d" xlength ylength xdata ydata; exit 1)
       else ();
       (* get min/max value in data *)
       (* let minv = ref max_float in *)
@@ -219,7 +226,7 @@ module Heatmap =
           Image.set plot_image i j c
         done
       done;
-      let image      = Commands.image ~pos:Pt.zero ~image:plot_image in
+      let image      = Commands.image ~pos:(Pt.pt 1.0 1.0) ~image:plot_image in
       axis
         ~xrange ~yrange
         ~xticks ~yticks
@@ -228,16 +235,26 @@ module Heatmap =
         ~data:[image]
         
   end
-    
-let init ~window_width ~window_height =
+
+(* let init () = *)
+(*   match Sdl.init Sdl.Init.video with *)
+(*   | Error (`Msg msg) -> *)
+(*      Sdl.log "Init error: %s" msg; exit 1 *)
+(*   | Ok () -> *)
+(*      () *)
+
+let init_sdl  =
+  let default_width = 10
+  and default_height = 10 in
+  fun () ->
   (* Init SDL video *) 
   match Sdl.init Sdl.Init.video with
   | Error (`Msg msg) -> Sdl.log "Init error: %s" msg; exit 1
   | Ok () ->
      let window_result =
        Sdl.create_window
-         ~w:window_width
-         ~h:window_height
+         ~w:default_width
+         ~h:default_height
          "SDL OpenGL"
          Sdl.Window.opengl
      in
@@ -246,9 +263,16 @@ let init ~window_width ~window_height =
      | Ok window ->
         Sdl { window }
 
+let init_pdf filename = Pdf { filename }
+            
+let process_plot xmargin ymargin plot =
+  let (cmds, bbox) = Commands.emit_commands_with_bbox plot in
+  let w    = xmargin +. (Bbox.width bbox)
+  and h    = ymargin +. (Bbox.height bbox) in
+  (Commands.center_to_page (w, h) cmds, w, h)
+    
 let render_layout_centered ctx xmargin ymargin layout =
   let (cmds, bbox) = Commands.emit_commands_with_bbox layout in
-  let bbox = Commands.Bbox.of_commands cmds in
   let w    = xmargin +. (Bbox.width bbox)
   and h    = ymargin +. (Bbox.height bbox) in
   let cmds = Commands.center_to_page (w, h) cmds in
@@ -262,15 +286,21 @@ let render_layout_centered ctx xmargin ymargin layout =
     })
   in
   List.iter (Backend.render ctx) cmds
-    
-let display ~window ~plots =
-  let Sdl { window } = window in
+            
+let display_sdl window plot =
+  let (screen_xsize, screen_ysize) = Sdl.get_window_size window in
+  (* 0. resize SDL window to plot size, if needed and get surface *)
+  let plot, w, h = process_plot 1.0 1.0 plot in (* TODO: make margins a parameter *)
+  let iw = int_of_float (ceil w) in
+  let ih = int_of_float (ceil h) in
+  if screen_xsize <> iw || screen_ysize <> ih
+  then Sdl.set_window_size window ~w:iw ~h:ih
+  else ();
   let window_surface =
     match Sdl.get_window_surface window with
     | Error (`Msg msg) -> Sdl.log "Could not get window surface: %s" msg; exit 1    
     | Ok surface -> surface
   in
-  let (screen_xsize, screen_ysize) = Sdl.get_window_size window in
   (* 1. lock SDL surface *)
   let _ =
     match Sdl.lock_surface window_surface with
@@ -287,11 +317,11 @@ let display ~window ~plots =
   (* 3. reshape bigarray to match Cairo's expectations *)
   let sdl_pixels =
     let genarray = Bigarray.genarray_of_array1 sdl_pixels in
-    Bigarray.reshape_2 genarray screen_xsize screen_ysize
+    Bigarray.reshape_2 genarray iw ih (* screen_xsize screen_ysize *)
   in
   (* 4. Create a Cairo surface to write on the pixels *)
   let cairo_surface =
-    Cairo.Image.create_for_data32 ~width:screen_xsize ~height:screen_ysize sdl_pixels
+    Cairo.Image.create_for_data32 ~width:iw ~height:ih sdl_pixels
   in
   (* 5. Create Cairo context from Cairo surface *)
   let ctx = Cairo.create cairo_surface
@@ -303,7 +333,7 @@ let display ~window ~plots =
       Cairo.({
                 xx = 1.0 ; yx = 0.0 ;
                 xy = 0.0 ; yy = ~-. 1.0 ;
-                x0 = 0.0 ; y0 = (float screen_ysize)
+                x0 = 0.0 ; y0 = (float ih)
     });
     Cairo.set_line_width ctx 1.0;
     Cairo.select_font_face
@@ -314,7 +344,8 @@ let display ~window ~plots =
   in
   (* 7. Render layout *)
   let _ =
-    render_layout_centered ctx 1.0 1.0 plots;
+    List.iter (Backend.render ctx) plot;
+    (* render_layout_centered ctx 1.0 1.0 plot; *)
     Cairo.Surface.finish cairo_surface
   in
   (* 8. Unlock SDL surface *)
@@ -326,6 +357,35 @@ let display ~window ~plots =
   | Error (`Msg msg) -> Sdl.log "Could not update window surface: %s" msg; exit 1
   | Ok () -> ()
 
+let display_pdf filename plot =
+  let plot, w, h    = process_plot 1.0 1.0 plot in (* TODO: make margins a parameter *)
+  let cairo_surface = Cairo.PDF.create ~fname:filename ~width:w ~height:h in  
+  let ctx           = Cairo.create cairo_surface in
+  let _ =
+    Cairo.set_matrix
+      ctx
+      Cairo.({
+                xx = 1.0 ; yx = 0.0 ;
+                xy = 0.0 ; yy = ~-. 1.0 ;
+                x0 = 0.0 ; y0 = h
+    });
+    Cairo.set_line_width ctx 1.0;
+    Cairo.select_font_face
+      ctx
+      "DejaVuSansMono"
+      ~slant:Cairo.Upright
+      ~weight:Cairo.Normal
+  in
+  (* 7. Render layout *)
+  List.iter (Backend.render ctx) plot;
+  Cairo.Surface.finish cairo_surface
+
+let display ~target ~plot =
+  match target with
+  | Sdl { window }   -> display_sdl window plot
+  | Pdf { filename } -> display_pdf filename plot
+
+               
 (* let window = init ~window_width:1080 ~window_height:1080 *)
 
 (* let _ = display window layout *)
