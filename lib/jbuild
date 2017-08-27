@@ -3,4 +3,4 @@
 (library
  ((name        vplot)
   (public_name vplot)
-  (libraries (vlayout cairo2 tsdl))))
+  (libraries (dolog vlayout cairo2 tsdl))))
