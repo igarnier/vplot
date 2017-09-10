@@ -14,23 +14,21 @@ module Name =
     let print = string_of_int
                   
   end
-    
+
 module Commands = Commands.Make(Name)
 
 module Backend = Backends.Cairo(Commands)
 
-
-type domain = (float, Bigarray.float64_elt, Bigarray.c_layout) Bigarray.Array1.t
-
-type data1d = (float, Bigarray.float64_elt, Bigarray.c_layout) Bigarray.Array1.t
-
-type data2d = (float, Bigarray.float64_elt, Bigarray.c_layout) Bigarray.Array2.t
-                               
+type vector = Owl.Vec.vec
+type data2d = Owl.Mat.mat
+                                                               
 type target =
   | Sdl of { window   : Tsdl.Sdl.window }
   | Pdf of { filename : string }             
                                
 type window = Tsdl.Sdl.surface
+
+type plot = Commands.layout
 
 let init_timer () =
   match Sdl.init Sdl.Init.timer with
@@ -86,14 +84,19 @@ let render_layout_centered ctx xmargin ymargin layout =
   List.iter (Backend.render ctx) cmds
             
 let display_sdl window plot =
+  let (screen_xpos,  screen_ypos)  = Sdl.get_window_position window in
   let (screen_xsize, screen_ysize) = Sdl.get_window_size window in
   (* 0. resize SDL window to plot size, if needed and get surface *)
   let plot, w, h = process_plot 1.0 1.0 plot in (* TODO: make margins a parameter *)
   let iw = int_of_float (ceil w) in
   let ih = int_of_float (ceil h) in
-  if screen_xsize <> iw || screen_ysize <> ih
-  then Sdl.set_window_size window ~w:iw ~h:ih
-  else ();
+  let width, height =
+    if screen_xsize < iw || screen_ysize < ih then
+      (Sdl.set_window_size window ~w:iw ~h:ih;
+       Sdl.set_window_position window ~x:screen_xpos ~y:screen_ypos;
+       iw,ih)
+    else screen_xsize, screen_ysize
+  in
   let window_surface =
     match Sdl.get_window_surface window with
     | Error (`Msg msg) -> Sdl.log "Could not get window surface: %s" msg; exit 1    
@@ -115,11 +118,11 @@ let display_sdl window plot =
   (* 3. reshape bigarray to match Cairo's expectations *)
   let sdl_pixels =
     let genarray = Bigarray.genarray_of_array1 sdl_pixels in
-    Bigarray.reshape_2 genarray iw ih (* screen_xsize screen_ysize *)
+    Bigarray.reshape_2 genarray width height (* screen_xsize screen_ysize *)
   in
   (* 4. Create a Cairo surface to write on the pixels *)
   let cairo_surface =
-    Cairo.Image.create_for_data32 ~width:iw ~height:ih sdl_pixels
+    Cairo.Image.create_for_data32 ~width ~height sdl_pixels
   in
   (* 5. Create Cairo context from Cairo surface *)
   let ctx = Cairo.create cairo_surface

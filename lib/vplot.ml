@@ -2,6 +2,8 @@ module Heatmap = Heatmap
 
 module Gradient = Gradient
 
+module Vector = Vector
+
 module Plot = Plot
 
 module Style =
