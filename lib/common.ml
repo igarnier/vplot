@@ -3,6 +3,20 @@ open Plot.Commands
 open Vlayout
 open Utils
 
+
+(* let extract_ticks vec ticks = *)
+(*   let len = Owl.Vec.numel vec in *)
+(*   if ticks < 2 *)
+(*   then (Log.error "extract_ticks: not enough ticks on axis."; exit 1); *)
+(*   if len < ticks *)
+(*   then (Log.error "extract_ticks: too many ticks on axis."; exit 1); *)
+(*   let stride = len / (ticks - 1) in *)
+(*   let acc    = ref [vec.{0,0}] in *)
+(*   for i = 1 to ticks - 2 do *)
+(*     acc := vec.{0, i * stride} :: !acc *)
+(*   done; *)
+(*   List.rev (vec.{0,len-1} :: !acc) *)
+
 let extract_ticks vec ticks =
   let len = Owl.Vec.numel vec in
   if ticks < 2
@@ -10,11 +24,11 @@ let extract_ticks vec ticks =
   if len < ticks
   then (Log.error "extract_ticks: too many ticks on axis."; exit 1);
   let stride = len / (ticks - 1) in
-  let acc    = ref [vec.{0,0}] in
+  let acc    = ref [Owl.Mat.get vec 0 0] in
   for i = 1 to ticks - 2 do
-    acc := vec.{0, i * stride} :: !acc
+    acc := (Owl.Mat.get vec 0 (i * stride)) :: !acc
   done;
-  List.rev (vec.{0,len-1} :: !acc)
+  List.rev ((Owl.Mat.get vec 0 (len-1)) :: !acc)
 
 
 let float_to_string f = Printf.sprintf "%.2g" f               

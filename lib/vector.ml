@@ -25,11 +25,11 @@ let extract_ticks vec ticks =
   if len < ticks
   then (Log.error "extract_ticks: too many ticks on axis."; exit 1);
   let stride = len / (ticks - 1) in
-  let acc    = ref [vec.{0,0}] in
+  let acc    = ref [Owl.Vec.get vec 0] in
   for i = 1 to ticks - 2 do
-    acc := vec.{0, i * stride} :: !acc
+    acc := (Owl.Vec.get vec (i * stride)) :: !acc
   done;
-  List.rev (vec.{0,len-1} :: !acc)
+  List.rev ((Owl.Vec.get vec (len-1)) :: !acc)
 
 (* Samples should be selected preferentially where the function has a lot of curvature, 
    which for a triple of consecutive points corresponds to how "unflat" is the angle
@@ -46,7 +46,7 @@ let subsample data =
       and vprev = vnow
       and vnow  = vnext
       and inow  = inow + 1
-      and vnext = data.{0,inow + 2} in
+      and vnext = Owl.Vec.get data (inow + 2) in
       if false (*TODO: insert appropriate test against well-chosen bound*) then
         (* Curvature et rid of vnow *)
         loop vprev vnow inow vnext acc
@@ -57,10 +57,10 @@ let subsample data =
   else if len = 1 then [0]
   else if len = 2 then [0;1]
   else
-    let vprev = data.{0,0}
-    and vnow  = data.{0,1}
+    let vprev = Owl.Vec.get data 0
+    and vnow  = Owl.Vec.get data 1
     and inow  = 1
-    and vnext = data.{0,2}
+    and vnext = Owl.Vec.get data 2
     and acc   = []
     in
     loop vprev vnow inow vnext acc
@@ -81,11 +81,11 @@ let draw_curve color xratio vector =
   | [] | [_] ->
     (Log.fatal "draw_curve: sample list too short. Bug found."; exit 0)
   | index :: tl ->
-    let v      = vector.{0,index} in
+    let v      = Owl.Vec.get vector index in
     let pt     = Pt.pt (float 0) v in
     let segments, _ =
       List.fold_left (fun (segments, prevpt) index ->
-          let v'  = vector.{0,index} in
+          let v'  = Owl.Vec.get vector index in
           let pt  = Pt.pt (xratio *. (float index)) v' in
           let seg = Commands.segment ~p1:prevpt ~p2:pt in
           (seg :: segments, pt)

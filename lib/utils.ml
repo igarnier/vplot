@@ -13,24 +13,24 @@ let max (f : float) (f' : float) =
   else f
 
 let vector_range (data : Plot.data2d) =
-  let len   = Array2.dim2 data in
+  let len   = Owl.Mat.col_num data in
   let minv  = { x = max_float } in
   let maxv  = { x = (-. max_float) } in
   for i = 0 to len -1 do
-    let v = data.{0,i} in
+    let v = Owl.Mat.get data 0 i in
     minv.x <- min minv.x v;
     maxv.x <- max maxv.x v
   done;
   (minv.x, maxv.x)
     
 let data_range (data : Plot.data2d) =
-  let xdata = Array2.dim1 data in
-  let ydata = Array2.dim2 data in
+  let xdata = Owl.Mat.row_num data in
+  let ydata = Owl.Mat.col_num data in
   let minv  = { x = max_float } in
   let maxv  = { x = (-. max_float) } in
   for i = 0 to xdata -1 do
     for j = 0 to ydata -1 do
-      let v = data.{i, j} in
+      let v = Owl.Mat.get data i j in
       minv.x <- min minv.x v;
       maxv.x <- max maxv.x v
     done

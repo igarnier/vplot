@@ -32,7 +32,7 @@ let write_data_to_image_noblock palette width minv maxv xlength ylength data =
   let ilen       = 1.0 /. (maxv -. minv) in
   for i = 0 to xlength - 1 do
     for j = 0 to ylength - 1 do
-      let f = data.{i, j} in
+      let f = Owl.Mat.get data i j in
       let f = clamp ((f -. minv) *. ilen) in
       let c = int_of_float (width *. f) in
       Image.set plot_image i j palette.{c}
@@ -47,7 +47,7 @@ let write_data_to_image block_x block_y palette width minv maxv xlength ylength 
   let ilen       = 1.0 /. (maxv -. minv) in
   for i = 0 to xlength - 1 do
     for j = 0 to ylength - 1 do
-      let f = data.{i, j} in
+      let f = Owl.Mat.get data i j in
       let f = clamp ((f -. minv) *. ilen) in
       let c = int_of_float (width *. f) in
       let c = palette.{c} in
@@ -172,15 +172,15 @@ class t ?(gradient=default_gradient) ?(blocksize=default_blocksize) () =
     method set_dynamic b = dynamic <- b
 
     method plot ~(xdomain : Plot.vector)  ~(ydomain : Plot.vector) ~(data : Plot.data2d) =
-      let xlength    = Array2.dim2 xdomain in  
-      let ylength    = Array2.dim2 ydomain in
-      let xdata      = Array2.dim1 data in
-      let ydata      = Array2.dim2 data in
+      let xlength    = Owl.Vec.numel xdomain in  
+      let ylength    = Owl.Vec.numel ydomain in
+      let xdata      = Owl.Mat.row_num data in
+      let ydata      = Owl.Mat.col_num data in
       if xlength <> xdata || ylength <> ydata then
         (Log.error "invalid heatmap size: |xdomain| = %d, |ydomain| = %d, |data| = %dx%d" xlength ylength xdata ydata; exit 1)
       else ();
-      let xrange     = { low = xdomain.{0,0}; high = xdomain.{0,xlength - 1} } in
-      let yrange     = { low = ydomain.{0,0}; high = ydomain.{0,ylength - 1} } in
+      let xrange     = { low = Owl.Vec.get xdomain 0; high = Owl.Vec.get xdomain (xlength - 1) } in
+      let yrange     = { low = Owl.Vec.get ydomain 0; high = Owl.Vec.get ydomain (ylength - 1) } in
       let minv, maxv =
         if self#dynamic then
           let minv, maxv = Utils.data_range data in
