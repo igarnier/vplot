@@ -65,7 +65,43 @@ let write_data_to_image block_x block_y palette width minv maxv xlength ylength 
   plot_image
 
 module Commands = Plot.Commands                    
-                    
+
+let heatbar minv maxv yticks tick_length ylabel_to_tick orig xlength ylength heatbar_xoffset clr gradient_path =
+  let heatbar_xoffset = 50.0 in
+  let heatbar_width   = 30.0 in
+  let heatbar_xpos    = orig.Pt.x +. xlength +. heatbar_xoffset in
+  let heatbar_style   = Style.(make
+                                 ~stroke:(solid_stroke ~clr)
+                                 ~fill:(Some (vertical_gradient gradient_path))
+                              )
+  in
+  let mins      = Pt.pt heatbar_xpos orig.y in
+  let maxs_x    = heatbar_xpos +. heatbar_width in
+  let maxs_y    = orig.y +. ylength in
+  let maxs      = Pt.pt maxs_x maxs_y in
+  let bar       = Commands.style ~style:heatbar_style ~subcommands:[ Commands.box mins maxs ] in
+  let ticks_y   = Utils.interpolate minv maxv yticks in
+  let pos_y     = Utils.interpolate 0.0 ylength yticks in
+  let bar_ticks = List.fold_left2 (fun acc ypos ylab ->
+      let tick = Commands.segment
+          ~p1:(Pt.pt maxs_x ypos)
+          ~p2:(Pt.pt (maxs_x -. tick_length) ypos) in
+      let labl = Commands.text
+          ~pos:({ pos = Pt.pt (maxs_x -. tick_length +. ylabel_to_tick) ypos; relpos = West })
+          ~size:10.0
+          ~text:(Common.float_to_string ylab)
+      in
+      tick :: labl :: acc
+    ) [] pos_y ticks_y
+  in
+  let bar_ticks =
+    Commands.style
+      ~style:Style.(make ~stroke:(solid_stroke ~clr) ~fill:None)
+      ~subcommands:bar_ticks
+  in
+  [bar; bar_ticks]
+
+
 class t ?(gradient=default_gradient) ?(blocksize=default_blocksize) () =
   let { gradient_path; gradient_steps } = default_gradient in
   let { Gradient.rarr; garr; barr } =
@@ -90,7 +126,7 @@ class t ?(gradient=default_gradient) ?(blocksize=default_blocksize) () =
     val mutable text_size        = 10.
     val mutable min_cutoff       = ~-. max_float
     val mutable max_cutoff       = max_float
-    val mutable blocksize        = default_blocksize
+    val mutable blocksize        = blocksize
     val mutable frame_color      = Style.gray 0.5
     val mutable background_color = Style.black
     val mutable caption          = ""
@@ -185,8 +221,19 @@ class t ?(gradient=default_gradient) ?(blocksize=default_blocksize) () =
           ~length:(float xlength)
           ~tick_labels:ticks_x
       in
+      let heatbar =
+        let heatbar_xoffset = 30. in
+        heatbar
+          min_value max_value
+          yticks (~-. tick_length) (~-. ylabel_to_tick)
+          Pt.zero
+          (float xlength) (float ylength)
+          heatbar_xoffset
+          frame_color
+          gradient_path
+      in
       Common.(
-        apply_frame_color self#frame_color (image :: (vertical_axis @ horizontal_axis))
+        apply_frame_color self#frame_color (image :: (vertical_axis @ horizontal_axis @ heatbar))
         |> command
         |> apply_label_below self#caption self#text_size self#frame_color 30. 
       )

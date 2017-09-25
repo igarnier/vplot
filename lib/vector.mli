@@ -1,3 +1,7 @@
+type vec =
+  | Full of { data: Plot.vector; clr: Vlayout.Style.color; lab: string }
+  | Simple of Plot.vector
+
 class t : ?xsize:int -> ?ysize:int -> unit ->
   object
 
@@ -31,6 +35,6 @@ class t : ?xsize:int -> ?ysize:int -> unit ->
     method dynamic : bool
     method set_dynamic : bool -> unit
 
-    method plot : domain:Plot.vector -> data:Plot.vector -> Plot.Commands.layout
+    method plot : domain:Plot.vector -> data:(vec list) -> Plot.Commands.layout
 
   end

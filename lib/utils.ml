@@ -47,5 +47,17 @@ let interpolate a b n =
       x :: (loop (x +. d) (i+1))
   in
   loop a 0
+
+let rec _all_elements_equal x tl =
+  match tl with
+  | [] -> true
+  | y :: tl ->
+     (y = x) && (_all_elements_equal x tl)
+
+let all_elements_equal l =
+  match l with
+  | [] | [_] -> true
+  | x :: tl ->
+     _all_elements_equal x tl
        
 let (++) f g x = g (f x)

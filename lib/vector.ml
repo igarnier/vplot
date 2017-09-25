@@ -1,6 +1,22 @@
 open Vlayout (* for Pt *)
 
-module Log = Log.Make(struct let section = "basic" end)
+module Log = Log.Make(struct let section = "vector" end)
+
+type vec =
+  | Full of { data: Plot.vector; clr: Style.color; lab: string }
+  | Simple of Plot.vector
+
+let get_data = function
+  | Full { data } | Simple data -> data
+
+let get_color = function
+  | Full { clr } -> clr
+  | Simple _     -> Style.red
+
+let get_label = function
+  | Full { lab } -> lab
+  | Simple _     -> ""
+
 
 let extract_ticks vec ticks =
   let len = Owl.Vec.numel vec in
@@ -51,7 +67,34 @@ let subsample data =
 
 module Commands = Plot.Commands
 
-type range = { low : float; high : float }
+let vectors_enveloppe (data:Plot.vector list) min_value max_value =
+  List.fold_left (fun (min_value, max_value) data ->
+      let (minv, maxv) = Utils.vector_range data in
+      let min = Utils.min min_value minv
+      and max = Utils.max max_value maxv in
+      (min, max)
+    ) (min_value, max_value) data
+
+let draw_curve color xratio vector =
+  let samples = subsample vector in
+  match List.rev samples with
+  | [] | [_] ->
+    (Log.fatal "draw_curve: sample list too short. Bug found."; exit 0)
+  | index :: tl ->
+    let v      = vector.{0,index} in
+    let pt     = Pt.pt (float 0) v in
+    let segments, _ =
+      List.fold_left (fun (segments, prevpt) index ->
+          let v'  = vector.{0,index} in
+          let pt  = Pt.pt (xratio *. (float index)) v' in
+          let seg = Commands.segment ~p1:prevpt ~p2:pt in
+          (seg :: segments, pt)
+        ) ([], pt) tl
+    in
+    Commands.([style
+                 ~style:Style.(make ~stroke:(solid_stroke ~clr:color) ~fill:None)
+                 ~subcommands:segments])
+  
 
 class t ?(xsize=600) ?(ysize=600) () =
   object (self)
@@ -101,76 +144,71 @@ class t ?(xsize=600) ?(ysize=600) () =
     method dynamic = dynamic
     method set_dynamic b = dynamic <- b
 
-    method plot ~(domain:Plot.vector) ~(data:Plot.vector) =
+    method plot ~(domain:Plot.vector) ~(data:vec list) =
+      begin match data with [] -> (Log.error "vector: empty data list on input"; exit 1) | _ -> () end;
+      let data   = List.map get_data data in
+      let datlen = List.map Owl.Vec.numel data in
+      if not (Utils.all_elements_equal datlen) then
+        (Log.error "vector: input vectors must all be of identical length"; exit 1)
+      else ();
+      let datlen = List.hd datlen in
       let domlen = Owl.Vec.numel domain in
-      let datlen = Owl.Vec.numel data in
       if domlen <> datlen then
-        (Log.error "basic: size mismatch: |domain| = %d, |data| = %d" domlen datlen; exit 1)
+        (Log.error "vector: size mismatch: |domain| = %d, |data| = %d" domlen datlen; exit 1)
       else ();
       let minv, maxv =
         if self#dynamic then
-          let minv, maxv = Utils.vector_range data in
-          let minv       = Utils.min min_value minv
-          and maxv       = Utils.max max_value maxv in
+          let minv, maxv = vectors_enveloppe data min_value max_value in
           min_value <- minv;
           max_value <- maxv;
           minv, maxv
         else
-          Utils.vector_range data
+          vectors_enveloppe data max_float (~-. min_float)
+      in
+      let minv, maxv =
+        if abs_float (minv -. maxv) < (epsilon_float *. 100.) then
+          ((minv -. 1.0), (maxv +. 1.0))
+        else
+          (minv, maxv)
       in
       let deltay       = maxv -. minv in
       let yratio       = (float ysize) /. deltay in
-      let scaled_data  = 
-        data
-        |> (fun v -> Owl.Vec.sub_scalar v minv)
-        |> (fun v -> Owl.Vec.mul_scalar v yratio)
+      let xratio       = (float xsize) /. (float datlen) in
+      let scaled_data  =
+        ListLabels.map data
+          ~f:(fun v ->
+              Owl.Vec.sub_scalar v minv
+              |> (fun v -> Owl.Vec.mul_scalar v yratio))
       in
-      let samples      = subsample scaled_data in
-      match List.rev samples with
-      | [] | [_] ->
-        (Log.fatal "basic: sample list too short. Bug found."; exit 0)
-      | index :: tl ->
-        let v      = scaled_data.{0,index} in
-        let pt     = Pt.pt (float 0) v in
-        let xratio = (float xsize) /. (float datlen) in
-        let segments, _ =
-          List.fold_left (fun (segments, prevpt) index ->
-              let v'  = scaled_data.{0,index} in
-              let pt  = Pt.pt (xratio *. (float index)) v' in
-              let seg = Commands.segment ~p1:prevpt ~p2:pt in
-              (seg :: segments, pt)
-            ) ([], pt) tl
-        in
-        let curve  =
-          Commands.([style
-                       ~style:Style.(make ~stroke:(solid_stroke ~clr:red) ~fill:None)
-                       ~subcommands:segments])
-        in
-        let ticks_x = extract_ticks domain self#xticks in
-        let ticks_y = Utils.interpolate minv maxv self#yticks in
-        let vertical_axis   =
-          Common.ticked_vertical_axis
-            ~tick_text_size:self#text_size
-            ~label_to_tick:self#ylabel_to_tick
-            ~tick_length:self#tick_length
-            ~origin:Pt.zero
-            ~length:(float ysize)
-            ~tick_labels:ticks_y
-        in
-        let horizontal_axis =
-          Common.ticked_horizontal_axis
-            ~tick_text_size:self#text_size
-            ~label_to_tick:self#xlabel_to_tick
-            ~tick_length:self#tick_length
-            ~origin:Pt.zero
-            ~length:(float xsize)
-            ~tick_labels:ticks_x
-        in
-        Common.(
-          apply_frame_color self#frame_color (curve @ vertical_axis @ horizontal_axis)
-          |> command
-          |> apply_label_below self#caption self#text_size self#frame_color 30. 
-        )
+      let curves  = 
+        List.map (draw_curve Style.red xratio) scaled_data 
+        |> List.flatten
+      in
+      let ticks_x = extract_ticks domain self#xticks in
+      let ticks_y = Utils.interpolate minv maxv self#yticks in
+      let vertical_axis   =
+        Common.ticked_vertical_axis
+          ~tick_text_size:self#text_size
+          ~label_to_tick:self#ylabel_to_tick
+          ~tick_length:self#tick_length
+          ~origin:Pt.zero
+          ~length:(float ysize)
+          ~tick_labels:ticks_y
+      in
+      let horizontal_axis =
+        Common.ticked_horizontal_axis
+          ~tick_text_size:self#text_size
+          ~label_to_tick:self#xlabel_to_tick
+          ~tick_length:self#tick_length
+          ~origin:Pt.zero
+          ~length:(float xsize)
+          ~tick_labels:ticks_x
+      in
+      Common.(
+        apply_frame_color self#frame_color (curves @ vertical_axis @ horizontal_axis)
+        |> command
+        |> apply_label_below self#caption self#text_size self#frame_color 30. 
+      )
 
 
   end
