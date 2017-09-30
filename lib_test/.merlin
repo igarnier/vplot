@@ -1,0 +1,25 @@
+B ../_build/default/lib
+B ../_build/default/lib_test
+FLG -w -40
+PKG bigarray
+PKG bytes
+PKG cairo2
+PKG ctypes
+PKG ctypes.foreign
+PKG ctypes.foreign.base
+PKG ctypes.foreign.threaded
+PKG ctypes.stubs
+PKG dolog
+PKG eigen
+PKG gsl
+PKG integers
+PKG owl
+PKG plplot
+PKG result
+PKG str
+PKG threads
+PKG threads.posix
+PKG tsdl
+PKG unix
+PKG vlayout
+S ../lib

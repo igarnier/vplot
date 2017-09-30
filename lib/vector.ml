@@ -1,7 +1,9 @@
-open Vlayout (* for Pt *)
 
 module Log = Log.Make(struct let section = "vector" end)
 
+open Vlayout (* for Pt *)
+open Utils
+    
 type vec =
   | Full of { data: Plot.vector; clr: Style.color; lab: string }
   | Simple of Plot.vector
@@ -17,6 +19,11 @@ let get_label = function
   | Full { lab } -> lab
   | Simple _     -> ""
 
+let map_data f =
+  function
+  | Full { data; clr; lab } ->
+    Full { data = f data; clr; lab }
+  | Simple data -> Simple (f data)
 
 let extract_ticks vec ticks =
   let len = Owl.Vec.numel vec in
@@ -75,7 +82,12 @@ let vectors_enveloppe (data:Plot.vector list) min_value max_value =
       (min, max)
     ) (min_value, max_value) data
 
-let draw_curve color xratio vector =
+let draw_curve xratio vec =
+  let vector, color =
+    match vec with
+    | Full { data; clr } -> data, clr
+    | Simple data -> data, Vlayout.Style.red
+  in
   let samples = subsample vector in
   match List.rev samples with
   | [] | [_] ->
@@ -146,8 +158,8 @@ class t ?(xsize=600) ?(ysize=600) () =
 
     method plot ~(domain:Plot.vector) ~(data:vec list) =
       begin match data with [] -> (Log.error "vector: empty data list on input"; exit 1) | _ -> () end;
-      let data   = List.map get_data data in
-      let datlen = List.map Owl.Vec.numel data in
+      let points = List.map get_data data in
+      let datlen = List.map Owl.Vec.numel points in
       if not (Utils.all_elements_equal datlen) then
         (Log.error "vector: input vectors must all be of identical length"; exit 1)
       else ();
@@ -158,12 +170,12 @@ class t ?(xsize=600) ?(ysize=600) () =
       else ();
       let minv, maxv =
         if self#dynamic then
-          let minv, maxv = vectors_enveloppe data min_value max_value in
+          let minv, maxv = vectors_enveloppe points min_value max_value in
           min_value <- minv;
           max_value <- maxv;
           minv, maxv
         else
-          vectors_enveloppe data max_float (~-. min_float)
+          vectors_enveloppe points max_float (~-. min_float)
       in
       let minv, maxv =
         if abs_float (minv -. maxv) < (epsilon_float *. 100.) then
@@ -176,12 +188,10 @@ class t ?(xsize=600) ?(ysize=600) () =
       let xratio       = (float xsize) /. (float datlen) in
       let scaled_data  =
         ListLabels.map data
-          ~f:(fun v ->
-              Owl.Vec.sub_scalar v minv
-              |> (fun v -> Owl.Vec.mul_scalar v yratio))
+          ~f:(map_data (fun v -> Owl.Vec.sub_scalar v minv |> (fun v -> Owl.Vec.mul_scalar v yratio)))
       in
       let curves  = 
-        List.map (draw_curve Style.red xratio) scaled_data 
+        List.map (draw_curve xratio) scaled_data 
         |> List.flatten
       in
       let ticks_x = extract_ticks domain self#xticks in

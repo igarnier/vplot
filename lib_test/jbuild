@@ -1,0 +1,14 @@
+(jbuild_version 1)
+
+(executables
+ ((names (plots))
+  (libraries (vplot))))
+
+(rule
+ ((targets (plot.pdf))
+  (action (with-stdout-to ${@} (run ${test:plots.exe})))))
+
+(alias
+ ((name runtest)
+  (deps    (plots.exe))
+  (action (run ${<}))))
