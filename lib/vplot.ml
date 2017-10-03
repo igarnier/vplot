@@ -4,6 +4,8 @@ module Gradient = Gradient
 
 module Vector = Vector
 
+module Traj2d = Traj2d
+
 module Plot = Plot
 
 module Style =

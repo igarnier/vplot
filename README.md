@@ -1,5 +1,5 @@
 # vplot
-Plotting library built on top of vlayout, cairo2 and tsdl.
+Plotting library built on top of owl, vlayout, cairo2, batteries and tsdl.
 
 TODO:
 Other types of plots:
