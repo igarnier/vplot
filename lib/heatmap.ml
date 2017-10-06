@@ -69,15 +69,15 @@ module Commands = Plot.Commands
 let heatbar minv maxv yticks tick_length ylabel_to_tick orig xlength ylength heatbar_xoffset clr gradient_path =
   let heatbar_xoffset = 50.0 in
   let heatbar_width   = 30.0 in
-  let heatbar_xpos    = orig.Pt.x +. xlength +. heatbar_xoffset in
+  let heatbar_xpos    = (Pt.x orig) +. xlength +. heatbar_xoffset in
   let heatbar_style   = Style.(make
                                  ~stroke:(solid_stroke ~clr)
                                  ~fill:(Some (vertical_gradient gradient_path))
                               )
   in
-  let mins      = Pt.pt heatbar_xpos orig.y in
+  let mins      = Pt.pt heatbar_xpos (Pt.y orig) in
   let maxs_x    = heatbar_xpos +. heatbar_width in
-  let maxs_y    = orig.y +. ylength in
+  let maxs_y    = (Pt.y orig) +. ylength in
   let maxs      = Pt.pt maxs_x maxs_y in
   let bar       = Commands.style ~style:heatbar_style ~subcommands:[ Commands.box mins maxs ] in
   let ticks_y   = Utils.interpolate minv maxv yticks in

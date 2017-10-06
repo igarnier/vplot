@@ -13,6 +13,8 @@ depends: [
   "cairo2"
   "tsdl"
   "vlayout"
+  "batteries"
+  "owl"
 ]
 available: [ ocaml-version >= "4.04.1" ]
 descr: "

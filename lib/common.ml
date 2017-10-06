@@ -4,7 +4,6 @@ open Vlayout
 open Utils
 open Batteries
 
-
 (* let extract_ticks vec ticks = *)
 (*   let len = Owl.Vec.numel vec in *)
 (*   if ticks < 2 *)
@@ -36,12 +35,12 @@ let float_to_string f = Printf.sprintf "%.2f" f
 
 let ticked_vertical_axis ~tick_text_size ~label_to_tick ~tick_length ~origin ~length ~tick_labels =
   let tick_num  = List.length tick_labels in
-  let axis      = segment ~p1:origin ~p2:(Pt.(pt origin.x (origin.y +. length))) in
+  let axis      = segment ~p1:origin ~p2:(Pt.(pt (x origin) ((y origin) +. length))) in
   let pos_y     = Utils.interpolate 0.0 length tick_num in
   let tick_cmds =
     List.fold_left2 (fun acc ypos ylab ->
         let tick = segment
-            ~p1:(Pt.(pt origin.x ypos))
+            ~p1:(Pt.(pt (x origin) ypos))
             ~p2:(Pt.pt tick_length ypos) in
         let labl = text
             ~pos:({ pos = Pt.pt label_to_tick ypos; relpos = East })
@@ -55,12 +54,12 @@ let ticked_vertical_axis ~tick_text_size ~label_to_tick ~tick_length ~origin ~le
 
 let ticked_horizontal_axis ~tick_text_size ~label_to_tick ~tick_length ~origin ~length ~tick_labels =
   let tick_num  = List.length tick_labels in
-  let axis      = segment ~p1:origin ~p2:(Pt.pt (origin.x +. length) origin.y) in
+  let axis      = segment ~p1:origin ~p2:(Pt.pt ((Pt.x origin) +. length) (Pt.y origin)) in
   let pos_x     = Utils.interpolate 0.0 length tick_num in
   let tick_cmds =
     List.fold_left2 (fun acc xpos xlab ->
         let tick = segment
-                     ~p1:(Pt.pt xpos origin.y)
+                     ~p1:(Pt.pt xpos (Pt.y origin))
                      ~p2:(Pt.pt xpos tick_length) in
         let labl = text
                      ~pos:({ pos = Pt.pt xpos label_to_tick; relpos = North })
