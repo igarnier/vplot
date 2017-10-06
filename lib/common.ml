@@ -2,6 +2,7 @@ module Log = Log.Make(struct let section = "common" end)
 open Plot.Commands
 open Vlayout
 open Utils
+open Batteries
 
 
 (* let extract_ticks vec ticks = *)
@@ -31,7 +32,7 @@ let extract_ticks vec ticks =
   List.rev ((Owl.Mat.get vec 0 (len-1)) :: !acc)
 
 
-let float_to_string f = Printf.sprintf "%.2g" f               
+let float_to_string f = Printf.sprintf "%.2f" f               
 
 let ticked_vertical_axis ~tick_text_size ~label_to_tick ~tick_length ~origin ~length ~tick_labels =
   let tick_num  = List.length tick_labels in
