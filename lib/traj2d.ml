@@ -78,8 +78,8 @@ let draw_trajectory_relspeed time traj =
         ) speeds
     in
     let acc = ref [] in
-    for i = 1 to Array.length traj - 1 do
-      let p1   = traj.(i - 1) in
+    for i = 1 to Array.length traj - 1 do 
+     let p1   = traj.(i - 1) in
       let p2   = traj.(i) in
       if p1 != p2 then
         let seg  = Commands.segment ~p1 ~p2 in
@@ -109,6 +109,12 @@ let draw_trajectory_solid time traj clr =
        ~style:Style.(make ~stroke:(solid_stroke ~clr) ~fill:None)
        ~subcommands:!acc]
 
+let transform xsize ysize origin w h =
+  let xscale = xsize /. w in
+  let yscale = ysize /. h in
+  fun pt ->
+    let pt = Pt.minus pt origin in
+    Pt.pt ((Pt.x pt) *. xscale) ((Pt.y pt) *. yscale)
 
 class t ?(xsize=600) ?(ysize=600) () =
   object (self)
@@ -158,24 +164,13 @@ class t ?(xsize=600) ?(ysize=600) () =
     method dynamic = dynamic
     method set_dynamic b = dynamic <- b
 
-    method plot ~(data:traj list) =
+    method plot ?(decorations:Commands.t list option) ~(data:traj list) =
       begin match data with [] -> (Log.error "plot: empty data list on input"; exit 1) | _ -> () end;
       let trajs  = List.map trajectory_to_points data in
       let bboxes = List.map Bbox.of_points_arr trajs in
       let bbox   = List.fold_left Bbox.join Bbox.empty bboxes in
-      let width  = Bbox.width bbox
-      and height = Bbox.height bbox in
-      let xscale = float xsize /. width
-      and yscale = float ysize /. height in
-      let mins   = Bbox.sw bbox in
-      let scaled_trajs =
-        List.map (fun traj ->
-            Array.map (fun pt ->
-                let pt = Pt.minus pt mins in
-                Pt.pt ((Pt.x pt) *. xscale) ((Pt.y pt) *. yscale)
-              ) traj
-          ) trajs
-      in
+      let transf = transform (float xsize) (float ysize) (Bbox.sw bbox) (Bbox.width bbox) (Bbox.height bbox) in
+      let scaled_trajs = List.map (Array.map transf) trajs in
       let commands = List.map2 (fun { time; clr } traj ->
           match clr with
           | None ->
@@ -206,8 +201,13 @@ class t ?(xsize=600) ?(ysize=600) () =
           ~tick_labels:ticks_x
       in
       let commands = List.concat [trajectories; vertical_axis; horizontal_axis] in
+      let decorations =
+        match decorations with
+        | None -> []
+        | Some decs -> Commands.map_pt decs transf
+      in
       Common.(
-        apply_frame_color self#frame_color commands
+        apply_frame_color self#frame_color (commands @ decorations)
         |> command
         |> apply_label_below self#caption self#text_size self#frame_color 30.
       )

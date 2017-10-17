@@ -40,6 +40,6 @@ class t : ?xsize:int -> ?ysize:int -> unit ->
     method dynamic : bool
     method set_dynamic : bool -> unit
 
-    method plot : data:(traj list) -> Plot.Commands.layout
+    method plot : ?decorations:Plot.Commands.t list -> data:(traj list) -> Plot.Commands.layout
 
   end
