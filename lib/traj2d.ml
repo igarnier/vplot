@@ -11,7 +11,7 @@ type traj =
     time : float array;
     xs   : Plot.vector;
     ys   : Plot.vector;
-    clr  : Style.color option;
+    sty  : Style.t option;
     lbl  : string option        
   }
 
@@ -44,7 +44,7 @@ let velocity_idx time traj i =
     let idt   = 1. /. (time.(i) -. time.(i-1)) in
     Pt.scale (Pt.minus traj.(i) traj.(i-1)) idt
   else
-    raise (Invalid_argument "Traj.speed_idx: index out of bounds")
+    invalid_arg "velocity_idx: index out of bounds"
 
 let speed_idx time traj i =
   Pt.norm (velocity_idx time traj i)
@@ -52,7 +52,7 @@ let speed_idx time traj i =
 let instantaneous_speeds time traj =
   let len = Array.length time - 1 in
   if len = 0 then
-    failwith "instantaneous_speeds: empty trajectory"
+    invalid_arg "instantaneous_speeds: empty trajectory"
   else
     Array.init len (fun i ->
         speed_idx time traj (i+1)
@@ -85,7 +85,7 @@ let draw_trajectory_relspeed time traj =
         let seg  = Commands.segment ~p1 ~p2 in
         let elt  =
           Commands.style
-            ~style:Style.(make ~stroke:(solid_stroke ~clr:colors.(i-1)) ~fill:None)
+            ~style:Style.(make ~stroke:(solid_stroke ~clr:colors.(i-1)) ~dash:None ~fill:None)
             ~subcommands:[seg]
         in
         acc := elt :: !acc
@@ -93,21 +93,26 @@ let draw_trajectory_relspeed time traj =
     done;
     !acc
 
-let draw_trajectory_solid time traj clr =
-  if Array.length time <= 1 then []
-  else
-    let acc = ref [] in
-    for i = 1 to Array.length traj - 1 do
-      let p1   = traj.(i - 1) in
-      let p2   = traj.(i) in
-      if p1 != p2 then
-        let seg  = Commands.segment ~p1 ~p2 in
-        acc := seg :: !acc
-      else ()
-    done;
-    [Commands.style
-       ~style:Style.(make ~stroke:(solid_stroke ~clr) ~fill:None)
-       ~subcommands:!acc]
+let draw_trajectory ~traj ~style =
+  let acc = ref [] in
+  for i = 1 to Array.length traj - 1 do
+    let p1   = traj.(i - 1) in
+    let p2   = traj.(i) in
+    if p1 != p2 then
+      let seg  = Commands.segment ~p1 ~p2 in
+      acc := seg :: !acc
+    else ()
+  done;
+  [Commands.style ~style ~subcommands:!acc]
+
+let draw_trajectory_arrow ~traj ~style =
+  let points = Array.to_list traj in
+  let cmds =
+    Commands.Arrow.mk_multisegment_arrow
+      ~style:Commands.Arrow.mid_style
+      ~points
+  in
+  [Commands.style ~style ~subcommands:cmds]
 
 let transform xsize ysize origin w h =
   let xscale = xsize /. w in
@@ -132,6 +137,7 @@ class t ?(xsize=600) ?(ysize=600) () =
     (* Internal state, used for dynamic plots *)
     val mutable min_value        = max_float
     val mutable max_value        = ~-. max_float
+    val mutable arrow            = true
 
     (* boilerplate *)
     method xlabel_to_tick = xlabel_to_tick
@@ -164,19 +170,30 @@ class t ?(xsize=600) ?(ysize=600) () =
     method dynamic = dynamic
     method set_dynamic b = dynamic <- b
 
+    method arrow = arrow
+    method set_arrow b = arrow <- b
+    
     method plot ?(decorations:Commands.t list option) ~(data:traj list) =
       begin match data with [] -> (Log.error "plot: empty data list on input"; exit 1) | _ -> () end;
       let trajs  = List.map trajectory_to_points data in
       let bboxes = List.map Bbox.of_points_arr trajs in
-      let bbox   = List.fold_left Bbox.join Bbox.empty bboxes in
+      let decbox =
+        match decorations with
+        | None -> Bbox.empty
+        | Some cmds -> Commands.Bbox.of_commands cmds
+      in      
+      let bbox   = Bbox.join (List.fold_left Bbox.join Bbox.empty bboxes) decbox in
       let transf = transform (float xsize) (float ysize) (Bbox.sw bbox) (Bbox.width bbox) (Bbox.height bbox) in
       let scaled_trajs = List.map (Array.map transf) trajs in
-      let commands = List.map2 (fun { time; clr } traj ->
-          match clr with
+      let commands = List.map2 (fun { time; sty } traj ->
+          match sty with
           | None ->
             draw_trajectory_relspeed time traj
-          | Some clr ->
-            draw_trajectory_solid time traj clr
+          | Some sty ->
+            if self#arrow then
+              draw_trajectory_arrow ~traj ~style:sty
+            else
+              draw_trajectory ~traj ~style:sty
         ) data scaled_trajs
       in
       let trajectories = List.flatten commands in
@@ -207,7 +224,7 @@ class t ?(xsize=600) ?(ysize=600) () =
         | Some decs -> Commands.map_pt decs transf
       in
       Common.(
-        apply_frame_color self#frame_color (commands @ decorations)
+        apply_frame_color self#frame_color (List.rev_append (List.rev commands) decorations)
         |> command
         |> apply_label_below self#caption self#text_size self#frame_color 30.
       )

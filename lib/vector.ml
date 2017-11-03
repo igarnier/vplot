@@ -5,15 +5,11 @@ open Vlayout (* for Pt *)
 open Utils
     
 type vec =
-  | Full of { data: Plot.vector; clr: Style.color; lab: string }
+  | Full of { data: Plot.vector; sty: Style.t; lab: string }
   | Simple of Plot.vector
 
 let get_data = function
   | Full { data } | Simple data -> data
-
-let get_color = function
-  | Full { clr } -> clr
-  | Simple _     -> Style.red
 
 let get_label = function
   | Full { lab } -> lab
@@ -21,8 +17,8 @@ let get_label = function
 
 let map_data f =
   function
-  | Full { data; clr; lab } ->
-    Full { data = f data; clr; lab }
+  | Full { data; sty; lab } ->
+    Full { data = f data; sty; lab }
   | Simple data -> Simple (f data)
 
 let extract_ticks vec ticks =
@@ -83,10 +79,10 @@ let vectors_enveloppe (data:Plot.vector list) min_value max_value =
     ) (min_value, max_value) data
 
 let draw_curve xratio vec =
-  let vector, color =
+  let vector, sty =
     match vec with
-    | Full { data; clr } -> data, clr
-    | Simple data -> data, Vlayout.Style.red
+    | Full { data; sty } -> data, sty
+    | Simple data -> data, Vlayout.Style.(make ~stroke:(solid_stroke red) ~dash:None ~fill:None)
   in
   let samples = subsample vector in
   match List.rev samples with
@@ -103,9 +99,7 @@ let draw_curve xratio vec =
           (seg :: segments, pt)
         ) ([], pt) tl
     in
-    Commands.([style
-                 ~style:Style.(make ~stroke:(solid_stroke ~clr:color) ~fill:None)
-                 ~subcommands:segments])
+    Commands.([style ~style:sty ~subcommands:segments])
   
 
 class t ?(xsize=600) ?(ysize=600) () =

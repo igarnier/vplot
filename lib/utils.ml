@@ -1,4 +1,5 @@
 open Bigarray
+open Batteries
 
 module Log = Log.Make(struct let section = "utils" end)
                      

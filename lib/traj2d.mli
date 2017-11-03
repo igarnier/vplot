@@ -3,9 +3,12 @@ type traj =
     time : float array;
     xs   : Plot.vector;
     ys   : Plot.vector;
-    clr  : Vlayout.Style.color option;
+    sty  : Vlayout.Style.t option;
     lbl  : string option
   }
+
+val draw_trajectory : traj:(Vlayout.Pt.t array) -> style:Vlayout.Style.t -> Plot.Commands.t list
+val draw_trajectory_arrow : traj:(Vlayout.Pt.t array) -> style:Vlayout.Style.t -> Plot.Commands.t list    
 
 class t : ?xsize:int -> ?ysize:int -> unit ->
   object
@@ -40,6 +43,9 @@ class t : ?xsize:int -> ?ysize:int -> unit ->
     method dynamic : bool
     method set_dynamic : bool -> unit
 
+    method arrow : bool
+    method set_arrow : bool -> unit
+    
     method plot : ?decorations:Plot.Commands.t list -> data:(traj list) -> Plot.Commands.layout
 
   end

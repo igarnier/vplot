@@ -73,6 +73,7 @@ let heatbar minv maxv yticks tick_length ylabel_to_tick orig xlength ylength hea
   let heatbar_style   = Style.(make
                                  ~stroke:(solid_stroke ~clr)
                                  ~fill:(Some (vertical_gradient gradient_path))
+                                 ~dash:None
                               )
   in
   let mins      = Pt.pt heatbar_xpos (Pt.y orig) in
@@ -96,7 +97,7 @@ let heatbar minv maxv yticks tick_length ylabel_to_tick orig xlength ylength hea
   in
   let bar_ticks =
     Commands.style
-      ~style:Style.(make ~stroke:(solid_stroke ~clr) ~fill:None)
+      ~style:Style.(make ~stroke:(solid_stroke ~clr) ~fill:None ~dash:None)
       ~subcommands:bar_ticks
   in
   [bar; bar_ticks]

@@ -1,5 +1,5 @@
 type vec =
-  | Full of { data: Plot.vector; clr: Vlayout.Style.color; lab: string }
+  | Full of { data: Plot.vector; sty: Vlayout.Style.t; lab: string }
   | Simple of Plot.vector
 
 class t : ?xsize:int -> ?ysize:int -> unit ->

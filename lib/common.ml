@@ -73,7 +73,7 @@ let ticked_horizontal_axis ~tick_text_size ~label_to_tick ~tick_length ~origin ~
 
 let apply_frame_color frame_color commands =
   style
-    ~style:Style.(make ~stroke:(solid_stroke ~clr:frame_color) ~fill:None)
+    ~style:Style.(make ~stroke:(solid_stroke ~clr:frame_color) ~dash:None ~fill:None)
     ~subcommands:commands
 
 let command command =
@@ -83,6 +83,7 @@ let label lbl size text_color relpos =
   style
     ~style:(Style.make
               ~stroke:(Vlayout.Style.solid_stroke ~clr:text_color)
+              ~dash:None
               ~fill:None)
     ~subcommands:
       [
