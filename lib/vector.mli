@@ -1,40 +1,23 @@
 type vec =
-  | Full of { data: Plot.vector; sty: Vlayout.Style.t; lab: string }
-  | Simple of Plot.vector
+  | Full of { data: Owl.Vec.vec; sty: Vlayout.Style.t; lab: string }
+  | Simple of Owl.Vec.vec
 
-class t : ?xsize:int -> ?ysize:int -> unit ->
-  object
+type state = {
+  mutable min_value : float;
+  mutable max_value : float
+}
 
-    method xlabel_to_tick : float
-    method set_xlabel_to_tick : float -> unit
+type vector_options =
+  [ `State of state ]
 
-    method ylabel_to_tick : float
-    method set_ylabel_to_tick : float -> unit
+type options =
+  [ vector_options
+  | Frame.options
+  ]
 
-    method tick_length : float
-    method set_tick_length : float -> unit
+type data = { domain : Owl.Vec.vec; vecs : vec list }
 
-    method xticks : int
-    method set_xticks : int -> unit
-
-    method yticks : int
-    method set_yticks : int -> unit
-                            
-    method text_size : float
-    method set_text_size : float -> unit
-                                
-    method frame_color : Vlayout.Style.color
-    method set_frame_color : Vlayout.Style.color -> unit
-                                 
-    method background_color : Vlayout.Style.color
-    method set_background_color : Vlayout.Style.color -> unit
-
-    method caption : string
-    method set_caption : string -> unit
-
-    method dynamic : bool
-    method set_dynamic : bool -> unit
-
-    method plot : domain:Plot.vector -> data:(vec list) -> Plot.Commands.layout
-
-  end
+val plot :
+  options:options list ->
+  viewport:Viewport.t ->
+  data:data -> Cmds.t

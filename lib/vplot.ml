@@ -4,13 +4,18 @@ module Gradient = Gradient
 
 module Vector = Vector
 
-module Traj2d = Traj2d
+module Scatter = Scatter
+
+module Trees = Trees
+
+module Frame = Frame
+
+module Viewport = Viewport
 
 module Plot = Plot
 
-module Style =
-  struct
-    include Vlayout.Style
-  end
+module Style = Vlayout.Style
 
-module Commands = Plot.Commands
+module Display = Display
+
+module Cmds = Cmds

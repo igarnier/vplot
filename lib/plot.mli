@@ -1,29 +1,15 @@
-module Name :
-  sig
-    type t = int
+(** The kind of plots that can be performed. *)
+type plot =
+  | Heatmap of { data : Heatmap.data; options : Heatmap.options list }
+  | Vector  of { data : Vector.data;  options : Vector.options list }
+  | Scatter of { data : Scatter.data; options : Scatter.options list }
 
-    val compare : t -> t -> int
+(** A layout is a bunch of plots organized hierarchically in [plotbox]es. *)
+type layout =
+  | Plot of { vp : Viewport.t; plot : plot }
+  | Cmd  of Cmds.t list
+  | Hbox of layout list
+  | Vbox of layout list
 
-    val print : t -> string
-  end
 
-
-module Commands : Vlayout.Commands.CommandsSig
-
-(** In an effort to make vplot compatible with owl, our vectors are really row vectors, i.e.
-    matrices with one line. *)                    
-
-type vector = Owl.Vec.vec
-type data2d = Owl.Mat.mat
-
-type target
-
-type window
-
-type plot = Commands.layout
-
-val init_sdl : unit -> target
-
-val init_pdf : string -> target
-
-val display : target:target -> plot:plot -> unit
+val plot_pdf : string -> layout -> unit

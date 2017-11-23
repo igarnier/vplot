@@ -1,12 +1,58 @@
-
 module Log = Log.Make(struct let section = "vector" end)
 
+open Batteries
 open Vlayout (* for Pt *)
 open Utils
     
 type vec =
-  | Full of { data: Plot.vector; sty: Style.t; lab: string }
-  | Simple of Plot.vector
+  | Full of { data : Owl.Vec.vec; sty : Style.t; lab : string }
+  | Simple of Owl.Vec.vec
+
+type state = {
+  mutable min_value : float;
+  mutable max_value : float
+}
+
+type vector_options =
+  [ `State of state ]
+
+type vector_options_rec =
+  {
+    state : state
+  }
+
+type options =
+  [ vector_options
+  | Frame.options
+  ]
+
+type data = { domain : Owl.Vec.vec; vecs : vec list }
+
+let default_state () =
+  {
+    min_value  = max_float;
+    max_value  = ~-. max_float;
+  }
+
+let default_options () =
+  {
+    state = default_state ()
+  }
+
+let set_option vector_opt (opt : vector_options) =
+  match opt with
+  | `State state -> { state }
+
+let parse_options (frame_opt, vector_opt) (option_list : options list) =
+  List.fold_left 
+    (fun (frame_opt, vector_opt) opt ->
+       match opt with
+       | #Frame.options as o ->
+         (Frame.set_option frame_opt o, vector_opt)
+       | #vector_options as o ->
+         (frame_opt, set_option vector_opt o)
+    ) (frame_opt, vector_opt) option_list
+ 
 
 let get_data = function
   | Full { data } | Simple data -> data
@@ -68,9 +114,7 @@ let subsample data =
     in
     loop vprev vnow inow vnext acc
 
-module Commands = Plot.Commands
-
-let vectors_enveloppe (data:Plot.vector list) min_value max_value =
+let vectors_enveloppe (data:Owl.Vec.vec list) min_value max_value =
   List.fold_left (fun (min_value, max_value) data ->
       let (minv, maxv) = Utils.vector_range data in
       let min = Utils.min min_value minv
@@ -78,141 +122,69 @@ let vectors_enveloppe (data:Plot.vector list) min_value max_value =
       (min, max)
     ) (min_value, max_value) data
 
-let draw_curve xratio vec =
+let draw_curve domain vec =
   let vector, sty =
     match vec with
     | Full { data; sty } -> data, sty
-    | Simple data -> data, Vlayout.Style.(make ~stroke:(solid_stroke red) ~dash:None ~fill:None)
+    | Simple data -> data, Vlayout.Style.(make ~stroke:(solid_stroke red) ~width:None  ~dash:None~fill:None)
   in
   let samples = subsample vector in
+  (* let samples = List.range 0 `To (Owl.Vec.numel vector - 1) in *)
   match List.rev samples with
   | [] | [_] ->
     (Log.fatal "draw_curve: sample list too short. Bug found."; exit 0)
   | index :: tl ->
-    let v      = Owl.Vec.get vector index in
-    let pt     = Pt.pt (float 0) v in
+    let y      = Owl.Vec.get vector index in
+    let x      = Owl.Vec.get domain index in
+    let pt     = Pt.pt x y in
     let segments, _ =
       List.fold_left (fun (segments, prevpt) index ->
-          let v'  = Owl.Vec.get vector index in
-          let pt  = Pt.pt (xratio *. (float index)) v' in
-          let seg = Commands.segment ~p1:prevpt ~p2:pt in
+          let y   = Owl.Vec.get vector index in
+          let x   = Owl.Vec.get domain index in
+          let pt  = Pt.pt x y in
+          let seg = Cmds.segment ~p1:prevpt ~p2:pt in
           (seg :: segments, pt)
         ) ([], pt) tl
     in
-    Commands.([style ~style:sty ~subcommands:segments])
+    Cmds.([style ~style:sty ~subcommands:segments])
   
+let plot_internal frame { state } viewport domain data =
+  begin match data with [] -> (Log.error "plot_internal: empty data list on input"; exit 1) | _ -> () end;
+  let points = List.map get_data data in
+  let datlen = List.map Owl.Vec.numel points in
+  if not (Utils.all_elements_equal datlen) then
+    (Log.error "plot_internal: input vectors must all be of identical length"; exit 1)
+  else ();
+  let datlen = List.hd datlen in
+  let domlen = Owl.Vec.numel domain in
+  if domlen <> datlen then
+    (Log.error "plot_internal: size mismatch: |domain| = %d, |data| = %d" domlen datlen; exit 1)
+  else ();
+  let minv, maxv =
+    let minv, maxv = vectors_enveloppe points state.min_value state.max_value in
+    state.min_value <- minv;
+    state.max_value <- maxv;
+    minv, maxv
+  in
+  let minv, maxv =
+    (* Handle near-constant functions *)
+    if abs_float (minv -. maxv) < (epsilon_float *. 100.) then
+      ((minv -. 1.0), (maxv +. 1.0))
+    else
+      (minv, maxv)
+  in
+  (* Compute plot *)
+  let curves =
+    List.map (draw_curve domain) data
+    |> List.flatten
+  in
+  let ydomain = Utils.linspace minv maxv frame.Frame.yaxis.tick_num in
+  (* Add frame *)
+  let framed = Frame.add_frame frame (Owl.Vec.to_array domain) ydomain curves in
+  (* Map to viewport *)
+  Viewport.apply viewport [framed]
 
-class t ?(xsize=600) ?(ysize=600) () =
-  object (self)
-    (* Default values for the plot parameters *)
-    val mutable frame_color      = Style.gray 0.5
-    val mutable background_color = Style.black
-    val mutable xlabel_to_tick   = ~-. 10.
-    val mutable ylabel_to_tick   = ~-. 10.
-    val mutable tick_length      = 10.
-    val mutable xticks           = 6
-    val mutable yticks           = 6
-    val mutable text_size        = 10.
-    val mutable caption          = ""
-    val mutable dynamic          = false
-    (* Internal state, used for dynamic plots *)
-    val mutable min_value        = max_float
-    val mutable max_value        = ~-. max_float
-
-    (* boilerplate *)
-    method xlabel_to_tick = xlabel_to_tick
-    method set_xlabel_to_tick f = xlabel_to_tick <- f
-
-    method ylabel_to_tick = ylabel_to_tick
-    method set_ylabel_to_tick f = ylabel_to_tick <- f
-
-    method tick_length = tick_length
-    method set_tick_length f = tick_length <- f
-
-    method xticks = xticks
-    method set_xticks i = xticks <- i
-
-    method yticks = yticks
-    method set_yticks i = yticks <- i
-                            
-    method text_size = text_size
-    method set_text_size f = text_size <- f
-
-    method frame_color = frame_color
-    method set_frame_color c = frame_color <- c
-                                 
-    method background_color = background_color
-    method set_background_color c = background_color <- c
-
-    method caption = caption
-    method set_caption s = caption <- s
-
-    method dynamic = dynamic
-    method set_dynamic b = dynamic <- b
-
-    method plot ~(domain:Plot.vector) ~(data:vec list) =
-      begin match data with [] -> (Log.error "vector: empty data list on input"; exit 1) | _ -> () end;
-      let points = List.map get_data data in
-      let datlen = List.map Owl.Vec.numel points in
-      if not (Utils.all_elements_equal datlen) then
-        (Log.error "vector: input vectors must all be of identical length"; exit 1)
-      else ();
-      let datlen = List.hd datlen in
-      let domlen = Owl.Vec.numel domain in
-      if domlen <> datlen then
-        (Log.error "vector: size mismatch: |domain| = %d, |data| = %d" domlen datlen; exit 1)
-      else ();
-      let minv, maxv =
-        if self#dynamic then
-          let minv, maxv = vectors_enveloppe points min_value max_value in
-          min_value <- minv;
-          max_value <- maxv;
-          minv, maxv
-        else
-          vectors_enveloppe points max_float (~-. min_float)
-      in
-      let minv, maxv =
-        if abs_float (minv -. maxv) < (epsilon_float *. 100.) then
-          ((minv -. 1.0), (maxv +. 1.0))
-        else
-          (minv, maxv)
-      in
-      let deltay       = maxv -. minv in
-      let yratio       = (float ysize) /. deltay in
-      let xratio       = (float xsize) /. (float datlen) in
-      let scaled_data  =
-        ListLabels.map data
-          ~f:(map_data (fun v -> Owl.Vec.sub_scalar v minv |> (fun v -> Owl.Vec.mul_scalar v yratio)))
-      in
-      let curves  = 
-        List.map (draw_curve xratio) scaled_data 
-        |> List.flatten
-      in
-      let ticks_x = extract_ticks domain self#xticks in
-      let ticks_y = Utils.interpolate minv maxv self#yticks in
-      let vertical_axis   =
-        Common.ticked_vertical_axis
-          ~tick_text_size:self#text_size
-          ~label_to_tick:self#ylabel_to_tick
-          ~tick_length:self#tick_length
-          ~origin:Pt.zero
-          ~length:(float ysize)
-          ~tick_labels:ticks_y
-      in
-      let horizontal_axis =
-        Common.ticked_horizontal_axis
-          ~tick_text_size:self#text_size
-          ~label_to_tick:self#xlabel_to_tick
-          ~tick_length:self#tick_length
-          ~origin:Pt.zero
-          ~length:(float xsize)
-          ~tick_labels:ticks_x
-      in
-      Common.(
-        apply_frame_color self#frame_color (curves @ vertical_axis @ horizontal_axis)
-        |> command
-        |> apply_label_below self#caption self#text_size self#frame_color 30. 
-      )
-
-
-  end
+let plot ~options ~viewport ~data =
+  let { domain; vecs } = data in
+  let frame, hmap_opts = parse_options (Frame.default, default_options ()) options in
+  plot_internal frame hmap_opts viewport domain vecs

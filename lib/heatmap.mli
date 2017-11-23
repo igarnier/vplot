@@ -1,46 +1,41 @@
 type gradient_spec =
   { gradient_path : Gradient.path; gradient_steps : int }
 
-class t : ?gradient:gradient_spec -> ?blocksize:(int*int) -> unit ->
-  object
+type state = {
+  mutable min_value  : float;
+  mutable max_value  : float;
+}
 
-    method xlabel_to_tick : float
-    method set_xlabel_to_tick : float -> unit
+type hmap_options =
+  [ `Gradient of gradient_spec
+  | `Blocksize of int * int
+  | `State of state
+  | `Axis of Frame.axis_option list
+  ]
 
-    method ylabel_to_tick : float
-    method set_ylabel_to_tick : float -> unit
+type options = [ hmap_options | Frame.options ]
 
-    method tick_length : float
-    method set_tick_length : float -> unit
+type data =
+  | Mat of { xdomain : Owl.Vec.vec; ydomain : Owl.Vec.vec; mat : Owl.Mat.mat }
+  | Fun of { xdomain : Owl.Vec.vec; ydomain : Owl.Vec.vec; f : float -> float -> float }
 
-    method xticks : int
-    method set_xticks : int -> unit
+val default_state : unit -> state
 
-    method yticks : int
-    method set_yticks : int -> unit
-                            
-    method text_size : float
-    method set_text_size : float -> unit
+(* val plot_mat : *)
+(*   options:options list -> *)
+(*   viewport:Viewport.t -> *)
+(*   xdomain:Owl.Vec.vec -> *)
+(*   ydomain:Owl.Vec.vec -> *)
+(*   data:Owl.Mat.mat -> Cmds.t *)
 
-    method min_cutoff : float
-    method set_min_cutoff : float -> unit
+(* val plot_f : *)
+(*   options:options list -> *)
+(*   viewport:Viewport.t -> *)
+(*   xdomain:Owl.Vec.vec -> *)
+(*   ydomain:Owl.Vec.vec -> *)
+(*   f:(float -> float -> float) -> Cmds.t *)
 
-    method max_cutoff : float
-    method set_max_cutoff : float -> unit
-                                
-    method frame_color : Vlayout.Style.color
-    method set_frame_color : Vlayout.Style.color -> unit
-                                 
-    method background_color : Vlayout.Style.color
-    method set_background_color : Vlayout.Style.color -> unit
-
-    method caption : string
-    method set_caption : string -> unit
-
-    method dynamic : bool
-    method set_dynamic : bool -> unit
-
-    method plot : xdomain:Plot.vector -> ydomain:Plot.vector -> data:Plot.data2d -> Plot.Commands.layout
-
-  end
-  
+val plot :
+  options:options list ->
+  viewport:Viewport.t ->
+  data:data -> Cmds.t

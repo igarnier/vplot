@@ -13,7 +13,7 @@ let max (f : float) (f' : float) =
   if f < f' then f'
   else f
 
-let vector_range (data : Plot.data2d) =
+let vector_range (data : Owl.Mat.mat) =
   let len   = Owl.Mat.col_num data in
   let minv  = { x = max_float } in
   let maxv  = { x = (-. max_float) } in
@@ -24,7 +24,7 @@ let vector_range (data : Plot.data2d) =
   done;
   (minv.x, maxv.x)
     
-let data_range (data : Plot.data2d) =
+let data_range (data : Owl.Vec.vec) =
   let xdata = Owl.Mat.row_num data in
   let ydata = Owl.Mat.col_num data in
   let minv  = { x = max_float } in
@@ -48,6 +48,18 @@ let interpolate a b n =
       x :: (loop (x +. d) (i+1))
   in
   loop a 0
+
+
+let linspace start finish steps =
+  if steps <= 0 then
+    invalid_arg "linspace: steps <= 0";
+  if steps = 1 then
+    [| start |]
+  else
+    let delta = (finish -. start) /. (float (steps - 1)) in
+    Array.init steps (fun i ->
+        start +. (float i) *. delta
+      )
 
 let rec _all_elements_equal x tl =
   match tl with
