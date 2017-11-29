@@ -180,7 +180,7 @@ let plot_internal frame { state } viewport domain data =
   in
   let ydomain = Utils.linspace minv maxv frame.Frame.yaxis.tick_num in
   (* Add frame *)
-  let framed = Frame.add_frame frame (Owl.Vec.to_array domain) ydomain curves in
+  let _, framed = Frame.add_frame frame (Owl.Vec.to_array domain) ydomain curves in
   (* Map to viewport *)
   Viewport.apply viewport [framed]
 

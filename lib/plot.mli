@@ -13,3 +13,4 @@ type layout =
 
 
 val plot_pdf : string -> layout -> unit
+val plot_sdl : layout -> unit

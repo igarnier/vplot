@@ -38,7 +38,7 @@ type hmap_options_rec =
     gradient  : gradient_spec;
     blocksize : int * int;
     state     : state;
-    hbar_axis : Frame.relative Frame.axis
+    hbar_axis : Frame.axis
   }
 
 let default_state () =
@@ -56,17 +56,19 @@ let default_gradient =
   let gradient_steps = 50 in
   { gradient_path; gradient_steps }
 
+let default_hbar_axis =
+  { 
+    Frame.label_to_tick = Units.mm 2.; 
+    tick_length = Units.mm 5.0; 
+    tick_num = 5
+  }
+
 let default_hmap_options () =
   {
     gradient  = default_gradient;
     blocksize = default_blocksize;
     state     = default_state ();
-    hbar_axis = 
-      { 
-        Frame.label_to_tick = 20.; 
-        tick_length = 10.; 
-        tick_num = 10 
-      }
+    hbar_axis = default_hbar_axis
   }
 
 let set_option hmap (opt : hmap_options) =
@@ -195,7 +197,7 @@ let plot_heatmap palette state blocksize xdomain ydomain data =
   in
   Cmds.image ~pos:(Pt.pt 1.0 1.0) ~image:plot_image
 
-let plot_heatbar width height color { Frame.label_to_tick; tick_length; tick_num } ticks gradient_path =
+let plot_heatbar width height color hbar_axis text_size ticks gradient_path =
   let heatbar_style   = Style.(make
                                  ~stroke:(solid_stroke ~clr:color)
                                  ~width:None
@@ -206,21 +208,23 @@ let plot_heatbar width height color { Frame.label_to_tick; tick_length; tick_num
   let mins      = Pt.zero in
   let maxs      = Pt.pt width height in
   let bar       = Cmds.style ~style:heatbar_style ~subcommands:[ Cmds.box mins maxs ] in
-  let pos_y     = Utils.interpolate 0.0 height (List.length ticks) in
-  let bar_ticks = List.fold_left2 (fun acc ypos ylab ->
-      let tick = Cmds.segment
-          ~p1:(Pt.pt width ypos)
-          ~p2:(Pt.pt (width -. tick_length) ypos) in
-      let labl = Cmds.text
-          ~pos:({ pos = Pt.pt (width -. tick_length +. label_to_tick) ypos; relpos = West })
-          ~width:(0.5 *. width)
-          ~height:(0.05 *. width)
-          (* ~size:10.0 *)
-          ~text:(Common.float_to_string ylab)
-      in
-      tick :: labl :: acc
-    ) [] pos_y ticks
-  in
+  (* let pos_y     = Utils.interpolate 0.0 height (List.length ticks) in *)
+  let origin    = Pt.pt (Pt.x maxs) (Pt.y mins) in
+  let bar_ticks = Frame.ticked_vertical_axis `Right origin height hbar_axis text_size ticks in
+  (* let bar_ticks = List.fold_left2 (fun acc ypos ylab -> *)
+  (*     let tick = Cmds.segment *)
+  (*         ~p1:(Pt.pt width ypos) *)
+  (*         ~p2:(Pt.pt (width -. (tick_length :> float)) ypos) in *)
+  (*     let labl = Cmds.text *)
+  (*         ~pos:({ pos = Pt.pt (width -. (tick_length :> float) +. (label_to_tick :> float)) ypos; relpos = West }) *)
+  (*         ~width:(0.5 *. width) *)
+  (*         ~height:(0.05 *. width) *)
+  (*         (\* ~size:10.0 *\) *)
+  (*         ~text:(Common.float_to_string ylab) *)
+  (*     in *)
+  (*     tick :: labl :: acc *)
+  (*   ) [] pos_y ticks *)
+  (* in *)
   let bar_ticks =
     Cmds.style
       ~style:Style.(make ~stroke:(solid_stroke ~clr:color) ~width:None ~fill:None ~dash:None)
@@ -244,32 +248,15 @@ let plot_internal frame { gradient; blocksize; state; hbar_axis } =
   fun viewport xdomain ydomain data ->
     (* Compute heatmap *)
     let hmap  = plot_heatmap palette state blocksize xdomain ydomain data in
-    let bbox  = Cmds.Bbox.of_command hmap in
     (* Apply a frame *)
-    let hmap  = Frame.add_frame frame (Owl.Vec.to_array xdomain) (Owl.Vec.to_array ydomain) [hmap] in
+    let bbox, hmap  = Frame.add_frame frame (Owl.Vec.to_array xdomain) (Owl.Vec.to_array ydomain) [hmap] in
     (* Throw in heatbar *)
     let h     = Cmds.Bbox.height bbox in
     let w     = Cmds.Bbox.width bbox in
     let ticks = Utils.interpolate state.min_value state.max_value hbar_axis.Frame.tick_num in
-    let hbar  = plot_heatbar (0.2 *. h) h frame.Frame.color hbar_axis ticks gradient_path in
+    let hbar  = plot_heatbar (0.2 *. h) h frame.Frame.color hbar_axis frame.text_size ticks gradient_path in
     let hbar  = Cmds.translate ~v:(Pt.pt (w +. (0.1 *. h)) 0.0) ~subcommands:hbar in
     Viewport.apply viewport [hbar; hmap]
-
-(* let plot_mat ~(options : options list) = *)
-(*   let frame, hmap_opts = parse_options (Frame.default, default_hmap_options ()) options in *)
-(*   let f = plot_internal frame hmap_opts in *)
-(*   fun ~viewport ~xdomain ~ydomain ~data -> *)
-(*     f viewport xdomain ydomain data *)
-      
-(* let plot_f ~(options : options list) = *)
-(*   let frame, hmap_opts = parse_options (Frame.default, default_hmap_options ()) options in *)
-(*   let fc = plot_internal frame hmap_opts in *)
-(*   fun ~viewport ~xdomain ~ydomain ~f -> *)
-(*   let mat = *)
-(*     Owl.Mat.init_nd (Owl.Vec.numel xdomain) (Owl.Vec.numel ydomain) *)
-(*       (fun i j -> f (Owl.Vec.get xdomain i) (Owl.Vec.get ydomain j)) *)
-(*   in *)
-(*   fc viewport xdomain ydomain mat *)
 
 let plot ~(options : options list) =
   let frame, hmap_opts = parse_options (Frame.default, default_hmap_options ()) options in

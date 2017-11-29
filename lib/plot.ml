@@ -35,8 +35,13 @@ let rec to_vlayout layout =
     let layout_list = List.map to_vlayout layout_list in
     Cmds.vbox ~deltay:5.0 ~layout_list
 
-let rec plot_pdf filename layout =
+let plot_pdf filename layout =
   let layout = to_vlayout layout in
   let target = Display.init_pdf filename in
+  Display.display ~target ~plot:layout
+    
+let plot_sdl layout =
+  let layout = to_vlayout layout in
+  let target = Display.init_sdl () in
   Display.display ~target ~plot:layout
   

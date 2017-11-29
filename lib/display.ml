@@ -142,22 +142,26 @@ let display_sdl window plot =
   | Error (`Msg msg) -> Sdl.log "Could not update window surface: %s" msg; exit 1
   | Ok () -> ()
 
+let mm_to_pt_ratio = 2.83465
+
 let display_pdf filename plot =
   let plot, w, h    = process_plot 1.0 1.0 plot in (* TODO: make margins a parameter *)
-  let cairo_surface = Cairo.PDF.create ~fname:filename ~width:w ~height:h in  
+  let width         = mm_to_pt_ratio *. w in
+  let height        = mm_to_pt_ratio *. h in
+  let cairo_surface = Cairo.PDF.create ~fname:filename ~width ~height in
   let ctx           = Cairo.create cairo_surface in
   let _ =
     Cairo.set_matrix
       ctx
       Cairo.({
-                xx = 1.0 ; yx = 0.0 ;
-                xy = 0.0 ; yy = ~-. 1.0 ;
-                x0 = 0.0 ; y0 = h
+                xx = mm_to_pt_ratio ; yx = 0.0 ;
+                xy = 0.0 ; yy = ~-. mm_to_pt_ratio;
+                x0 = 0.0 ; y0 = height
     });
-    Cairo.set_line_width ctx 1.0;
+    Cairo.set_line_width ctx (1.0 /. mm_to_pt_ratio);
     Cairo.select_font_face
       ctx
-      "DejaVuSansMono"
+      "fixed"
       ~slant:Cairo.Upright
       ~weight:Cairo.Normal
   in

@@ -18,4 +18,6 @@ module Style = Vlayout.Style
 
 module Display = Display
 
+module Units = Units
+
 module Cmds = Cmds

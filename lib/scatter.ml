@@ -172,7 +172,7 @@ let plot ~(options : options list) ~viewport ~data =
   let xdomain = Utils.linspace (Pt.x mins) (Pt.x maxs) frame.Frame.xaxis.tick_num in
   let ydomain = Utils.linspace (Pt.y mins) (Pt.y maxs) frame.Frame.yaxis.tick_num in
   (* Add frame *)
-  let framed = Frame.add_frame frame xdomain ydomain plot in
+  let _, framed = Frame.add_frame frame xdomain ydomain plot in
   (* Map to viewport *)
   Viewport.apply viewport [framed]
 
