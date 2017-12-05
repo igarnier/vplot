@@ -198,7 +198,6 @@ let add_frame frm xvalues yvalues plot =
   (* Resize [plot] and [bbox] to natural frame *)
   let xscale = (natural_x :> float) /. (w  :> float) in
   let yscale = (natural_y :> float) /. (h  :> float) in
-  Printf.printf "%f %f\n" xscale yscale;
   let plot   = Cmds.scale ~xs:xscale ~ys:yscale ~subcommands:plot in
   let bbox   = Cmds.Bbox.scale xscale yscale bbox in
   let origin = Cmds.Bbox.sw bbox in

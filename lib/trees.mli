@@ -1,10 +1,27 @@
-(** We access trees labelled with type 'a abstractly by folding over them. *)
 type 'a t =
-  {
-    fold : 'b. leaf:('a -> 'b) -> node:('a -> 'b list -> 'b) -> 'b
-  }
+  [ `Node of 'a * 'a t list ]
 
-val plot:
-  lbl:('a -> Cmds.layout) ->
-  data:'a t ->
-  Cmds.layout
+type trees_options =
+  [ `Deltax of Units.mm
+  | `Deltay of Units.mm
+  | `Scalex of float
+  | `Scaley of float
+  | `Halign of Cmds.hposition
+  | `Valign of Cmds.vposition
+  ]
+
+type options = trees_options
+
+type 'a tree_type =
+  | Simple     of { lbl : 'a -> Cmds.t list }
+  | Dendrogram of { lbl : 'a -> Cmds.t list * float }
+
+type 'a data =
+  { tree : 'a t; tree_type : 'a tree_type }
+
+val plot :
+  options:options list ->
+  viewport:Viewport.t ->
+  data:'a data ->
+  Cmds.t
+  

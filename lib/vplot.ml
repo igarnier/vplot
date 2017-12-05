@@ -8,6 +8,8 @@ module Scatter = Scatter
 
 module Trees = Trees
 
+module Easy = Easy
+
 module Frame = Frame
 
 module Viewport = Viewport

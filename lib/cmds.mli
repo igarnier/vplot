@@ -1,1 +1,1 @@
-include Vlayout.Commands.CommandsSig
+include Vlayout.Commands.CommandsSig with type name = int

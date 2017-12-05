@@ -22,8 +22,8 @@ let init_video () =
   | Ok () -> ()
                
 let init_sdl  =
-  let default_width = 10
-  and default_height = 10 in
+  let default_width = 100
+  and default_height = 100 in
   fun () ->
   init_video ();
   init_timer ();
@@ -67,13 +67,20 @@ let render_layout_centered ctx xmargin ymargin layout =
   in
   List.iter (Backend.render ctx) cmds
             
+let mm_to_pt_ratio = 2.83465
+
 let display_sdl window plot =
   let (screen_xpos,  screen_ypos)  = Sdl.get_window_position window in
   let (screen_xsize, screen_ysize) = Sdl.get_window_size window in
   (* 0. resize SDL window to plot size, if needed and get surface *)
   let plot, w, h = process_plot 1.0 1.0 plot in (* TODO: make margins a parameter *)
-  let iw = int_of_float (ceil w) in
-  let ih = int_of_float (ceil h) in
+  (* TODO: we should be able to get the PPI from the target display and scale the figure appropriately. *)
+  let aspect     = w /. h in
+  let iw = 800 in
+  let ih = int_of_float ((float iw) /. aspect) in
+  let sc = (float iw) /. w in
+  (* let iw = int_of_float (ceil width) in *)
+  (* let ih = int_of_float (ceil height) in *)
   let width, height =
     if screen_xsize < iw || screen_ysize < ih then
       (Sdl.set_window_size window ~w:iw ~h:ih;
@@ -98,7 +105,7 @@ let display_sdl window plot =
     Sdl.get_surface_pixels window_surface Bigarray.int32
   in
   (* TODO: fix this. *)  
-  let _ = Bigarray.Array1.fill sdl_pixels 0l in
+  let _ = Bigarray.Array1.fill sdl_pixels 0xFFFFFFFFl in
   (* 3. reshape bigarray to match Cairo's expectations *)
   let sdl_pixels =
     let genarray = Bigarray.genarray_of_array1 sdl_pixels in
@@ -116,14 +123,14 @@ let display_sdl window plot =
     Cairo.set_matrix
       ctx
       Cairo.({
-                xx = 1.0 ; yx = 0.0 ;
-                xy = 0.0 ; yy = ~-. 1.0 ;
+                xx = sc ; yx = 0.0 ;
+                xy = 0.0 ; yy = ~-. sc ;
                 x0 = 0.0 ; y0 = (float ih)
     });
     Cairo.set_line_width ctx 1.0;
     Cairo.select_font_face
       ctx
-      "DejaVuSansMono"
+      "fixed"
       ~slant:Cairo.Upright
       ~weight:Cairo.Normal
   in
@@ -142,7 +149,21 @@ let display_sdl window plot =
   | Error (`Msg msg) -> Sdl.log "Could not update window surface: %s" msg; exit 1
   | Ok () -> ()
 
-let mm_to_pt_ratio = 2.83465
+let sdl_loop window plot =
+  let exception Quit in
+  let event = Sdl.Event.create () in
+  try
+    while true do
+      display_sdl window plot;
+      while Sdl.poll_event (Some event) do
+        let event_type = Sdl.Event.get event Sdl.Event.typ in
+        if event_type = Sdl.Event.key_down then
+          raise Quit
+        else ()
+      done      
+    done
+  with 
+  | Quit -> ()
 
 let display_pdf filename plot =
   let plot, w, h    = process_plot 1.0 1.0 plot in (* TODO: make margins a parameter *)
@@ -158,7 +179,7 @@ let display_pdf filename plot =
                 xy = 0.0 ; yy = ~-. mm_to_pt_ratio;
                 x0 = 0.0 ; y0 = height
     });
-    Cairo.set_line_width ctx (1.0 /. mm_to_pt_ratio);
+    Cairo.set_line_width ctx 0.2;
     Cairo.select_font_face
       ctx
       "fixed"
@@ -171,6 +192,6 @@ let display_pdf filename plot =
 
 let display ~target ~plot =
   match target with
-  | Sdl { window }   -> display_sdl window plot
+  | Sdl { window }   -> sdl_loop window plot
   | Pdf { filename } -> display_pdf filename plot
                

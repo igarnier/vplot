@@ -14,6 +14,6 @@ module Name =
                   
   end
 
-module Commands = Commands.Make(Name)
+module Cmds = Commands.Make(Name)
 
-include Commands
+include Cmds
