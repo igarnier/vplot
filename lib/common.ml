@@ -77,7 +77,7 @@ let apply_frame_color frame_color commands =
     ~subcommands:commands
 
 let command command =
-  cmd ~name:None [ command ]
+  cmd [ command ]
 
 (* let label lbl size text_color relpos = *)
 (*   style *)

@@ -25,15 +25,15 @@ let rec to_vlayout layout =
       | Scatter { data; options } ->
         Scatter.plot ~options ~viewport:vp ~data        
     in
-    Cmds.cmd ~name:None [cmd]
+    Cmds.cmd [cmd]
   | Cmd cmds ->
-    Cmds.cmd ~name:None cmds
+    Cmds.cmd cmds
   | Hbox layout_list ->
     let layout_list = List.map to_vlayout layout_list in
-    Cmds.hbox ~deltax:5.0 ~layout_list
+    Cmds.hbox ~deltax:5.0 layout_list
   | Vbox layout_list ->
     let layout_list = List.map to_vlayout layout_list in
-    Cmds.vbox ~deltay:5.0 ~layout_list
+    Cmds.vbox ~deltay:5.0 layout_list
 
 let plot_pdf filename layout =
   let layout = to_vlayout layout in

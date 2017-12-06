@@ -28,7 +28,7 @@ type t =
     plot_type      : plot_type;
     color          : Style.color;
     text_size      : Units.pt;
-    caption        : caption option;
+    caption        : caption option;    
     xaxis          : axis;
     yaxis          : axis;
   }
@@ -97,7 +97,7 @@ let default =
     plot_type      = LinLin;
     color          = Style.black;
     (* bg             : Style.color; *)
-    text_size      = Units.pt 10.;
+    text_size      = Units.pt 5.;
     caption        = None;
     xaxis;
     yaxis
@@ -108,10 +108,8 @@ let default =
 (*   let w   = (float len) *. glyph_width in *)
 (*   Cmds.text ~pos ~width:w ~height:glyph_height ~text *)
 
-let text pos text_size str =
-  let h    = (Units.pt_to_mm text_size :> float) in
-  let w    = h *. (float (String.length str)) in
-  Cmds.text ~pos ~width:w ~height:h ~text:str
+let text pos (text_size : Units.pt) str =
+  Cmds.text ~pos ~size:(text_size:>float) ~text:str
 
 let ticked_horizontal_axis (side : [`Up|`Down]) origin width xaxis text_size tick_labels  =
   let tick_num  = List.length tick_labels in
@@ -210,7 +208,7 @@ let add_frame frm xvalues yvalues plot =
     match frm.caption with
     | None -> xaxis @ yaxis @ [plot]
     | Some { caption_pos; caption } ->
-      let gap = (Bbox.height bbox) *. 0.2 in
+      let gap = (Bbox.height bbox) *. 0.1 in
       let pos =
         match caption_pos with
         | `Above ->
@@ -222,7 +220,8 @@ let add_frame frm xvalues yvalues plot =
           let p   = Pt.plus p (Pt.pt 0.0 (~-. gap)) in
           { Cmds.pos = p; relpos = North }
       in
-      let lbl = text pos frm.text_size caption in
+      let size = Units.pt (2.0 *. (frm.text_size :> float)) in
+      let lbl = text pos size caption in
       lbl :: (xaxis @ yaxis @ [plot])
   in
   bbox, apply_frame_color frm.color cmds   
