@@ -125,7 +125,14 @@ let plot =
     ~viewport
     ~data:{ tree; 
             tree_type = Trees.Dendrogram
-                { lbl = (fun i -> [Cmds.text ~pos:{ pos = Vlayout.Pt.zero; relpos = Cmds.North } ~width:20.0 ~height:10.0 ~text:(string_of_int i)], (float i))
+                { 
+                  lbl = (fun i -> 
+                      [ Cmds.text
+                          ~pos:{ pos = Vlayout.Pt.zero; relpos = Cmds.North } 
+                          ~size:10.0
+                          ~text:(string_of_int i)
+                      ], 10.0
+                    )
                 }
           }
 
