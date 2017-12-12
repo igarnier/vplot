@@ -58,23 +58,23 @@ let plot ?name ?(options=[]) domain vecs =
     (* PDF plot *)
     Plot.plot_pdf name layout
 
-let scatter ?name ?(options=[]) xs ys =
-  let vecs_num = List.length vecs in
-  if vecs_num > styles_num then
-    invalid_arg "Easy.plot: too many vectors. Please use Plot module.";
-  let styles = List.take vecs_num all_styles in
-  let vecs = 
-    List.map2 (fun data sty ->
-        Vector.Full { data; sty; lab = "" }
-      ) vecs styles
-  in
-  let viewport = Viewport.AutoY { xsize = Units.mm 150.0 } in
-  let result   = Scatter.plot ~options ~viewport ~data:{ domain; vecs } in
-  let layout   = Plot.Cmd [result] in
-  match name with
-  | None -> 
-    (* SDL plot *)
-    Plot.plot_sdl layout
-  | Some name ->
-    (* PDF plot *)
-    Plot.plot_pdf name layout
+(* let scatter ?name ?(options=[]) xs ys =
+ *   let vecs_num = List.length vecs in
+ *   if vecs_num > styles_num then
+ *     invalid_arg "Easy.plot: too many vectors. Please use Plot module.";
+ *   let styles = List.take vecs_num all_styles in
+ *   let vecs = 
+ *     List.map2 (fun data sty ->
+ *         Vector.Full { data; sty; lab = "" }
+ *       ) vecs styles
+ *   in
+ *   let viewport = Viewport.AutoY { xsize = Units.mm 150.0 } in
+ *   let result   = Scatter.plot ~options ~viewport ~data:{ domain; vecs } in
+ *   let layout   = Plot.Cmd [result] in
+ *   match name with
+ *   | None -> 
+ *     (\* SDL plot *\)
+ *     Plot.plot_sdl layout
+ *   | Some name ->
+ *     (\* PDF plot *\)
+ *     Plot.plot_pdf name layout *)
