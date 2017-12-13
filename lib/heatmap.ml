@@ -1,7 +1,6 @@
 open Vlayout
 open Bigarray
-       
-module Log = Log.Make(struct let section = "Heatmap" end)
+
                      
 type gradient_spec =
   { 
@@ -60,7 +59,8 @@ let default_hbar_axis =
   { 
     Frame.label_to_tick = Units.mm 2.; 
     tick_length = Units.mm 5.0; 
-    tick_num = 5
+    tick_num = 5;
+    axis_label = ""
   }
 
 let default_hmap_options () =
@@ -135,52 +135,13 @@ let write_data_to_image block_x block_y { palette; width } minv maxv xlength yle
   done;
   plot_image
 
-(* let heatbar minv maxv yticks tick_length ylabel_to_tick orig xlength ylength heatbar_xoffset clr gradient_path = *)
-(*   let heatbar_xoffset = 50.0 in *)
-(*   let heatbar_width   = 30.0 in *)
-(*   let heatbar_xpos    = (Pt.x orig) +. xlength +. heatbar_xoffset in *)
-(*   let heatbar_style   = Style.(make *)
-(*                                  ~stroke:(solid_stroke ~clr) *)
-(*                                  ~fill:(Some (vertical_gradient gradient_path)) *)
-(*                                  ~width:None *)
-(*                                  ~dash:None *)
-(*                               ) *)
-(*   in *)
-(*   let mins      = Pt.pt heatbar_xpos (Pt.y orig) in *)
-(*   let maxs_x    = heatbar_xpos +. heatbar_width in *)
-(*   let maxs_y    = (Pt.y orig) +. ylength in *)
-(*   let maxs      = Pt.pt maxs_x maxs_y in *)
-(*   let bar       = Cmds.style ~style:heatbar_style ~subcommands:[ Cmds.box mins maxs ] in *)
-(*   let ticks_y   = Utils.interpolate minv maxv yticks in *)
-(*   let pos_y     = Utils.interpolate 0.0 ylength yticks in *)
-(*   let bar_ticks = List.fold_left2 (fun acc ypos ylab -> *)
-(*       let tick = Cmds.segment *)
-(*           ~p1:(Pt.pt maxs_x ypos) *)
-(*           ~p2:(Pt.pt (maxs_x -. tick_length) ypos) in *)
-(*       let labl = Cmds.text *)
-(*           ~pos:({ pos = Pt.pt (maxs_x -. tick_length +. ylabel_to_tick) ypos; relpos = West }) *)
-(*           ~width:(0.5 *. xlength) *)
-(*           ~height:(0.05 *. xlength) *)
-(*           (\* ~size:10.0 *\) *)
-(*           ~text:(Common.float_to_string ylab) *)
-(*       in *)
-(*       tick :: labl :: acc *)
-(*     ) [] pos_y ticks_y *)
-(*   in *)
-(*   let bar_ticks = *)
-(*     Cmds.style *)
-(*       ~style:Style.(make ~stroke:(solid_stroke ~clr) ~width:None ~fill:None ~dash:None) *)
-(*       ~subcommands:bar_ticks *)
-(*   in *)
-(*   [bar; bar_ticks] *)
-
 let plot_heatmap palette state blocksize xdomain ydomain data =
   let xlength    = Owl.Vec.numel xdomain in  
   let ylength    = Owl.Vec.numel ydomain in
   let xdata      = Owl.Mat.row_num data in
   let ydata      = Owl.Mat.col_num data in
   if xlength <> xdata || ylength <> ydata then
-    (Log.error "invalid heatmap size: |xdomain| = %d, |ydomain| = %d, |data| = %dx%d" xlength ylength xdata ydata; exit 1)
+    invalid_arg (Printf.sprintf "invalid heatmap size: |xdomain| = %d, |ydomain| = %d, |data| = %dx%d" xlength ylength xdata ydata)
   else ();
   let minv, maxv =
     let minv, maxv = Utils.data_range data in
@@ -208,23 +169,8 @@ let plot_heatbar width height color hbar_axis text_size ticks gradient_path =
   let mins      = Pt.zero in
   let maxs      = Pt.pt width height in
   let bar       = Cmds.style ~style:heatbar_style ~subcommands:[ Cmds.box mins maxs ] in
-  (* let pos_y     = Utils.interpolate 0.0 height (List.length ticks) in *)
   let origin    = Pt.pt (Pt.x maxs) (Pt.y mins) in
   let bar_ticks = Frame.ticked_vertical_axis `Right origin height hbar_axis text_size ticks in
-  (* let bar_ticks = List.fold_left2 (fun acc ypos ylab -> *)
-  (*     let tick = Cmds.segment *)
-  (*         ~p1:(Pt.pt width ypos) *)
-  (*         ~p2:(Pt.pt (width -. (tick_length :> float)) ypos) in *)
-  (*     let labl = Cmds.text *)
-  (*         ~pos:({ pos = Pt.pt (width -. (tick_length :> float) +. (label_to_tick :> float)) ypos; relpos = West }) *)
-  (*         ~width:(0.5 *. width) *)
-  (*         ~height:(0.05 *. width) *)
-  (*         (\* ~size:10.0 *\) *)
-  (*         ~text:(Common.float_to_string ylab) *)
-  (*     in *)
-  (*     tick :: labl :: acc *)
-  (*   ) [] pos_y ticks *)
-  (* in *)
   let bar_ticks =
     Cmds.style
       ~style:Style.(make ~stroke:(solid_stroke ~clr:color) ~width:None ~fill:None ~dash:None)

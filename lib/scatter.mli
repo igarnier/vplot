@@ -22,6 +22,9 @@ type options = Frame.options
 type datum = { data : points; plot_type : plot_type }
 type data  = datum list
 
+val enum_shape   : shape Batteries.Enum.t
+val enum_scatter : plot_type Batteries.Enum.t
+
 val plot : 
   options:options list ->
   viewport:Viewport.t -> data:data -> Cmds.t

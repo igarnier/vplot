@@ -1,5 +1,13 @@
 open Batteries
 
+let colors  = [ Vlayout.Style.red; 
+                Vlayout.Style.green;
+                Vlayout.Style.blue;
+                Vlayout.Style.gray 0.5;
+                Vlayout.Style.black;
+                Vlayout.Style.pink;
+                Vlayout.Style.cyan ]
+
 let solid_styles  = [ Vlayout.Style.Solid.red; 
                       Vlayout.Style.Solid.green;
                       Vlayout.Style.Solid.blue;
@@ -58,23 +66,47 @@ let plot ?name ?(options=[]) domain vecs =
     (* PDF plot *)
     Plot.plot_pdf name layout
 
-(* let scatter ?name ?(options=[]) xs ys =
- *   let vecs_num = List.length vecs in
- *   if vecs_num > styles_num then
- *     invalid_arg "Easy.plot: too many vectors. Please use Plot module.";
- *   let styles = List.take vecs_num all_styles in
- *   let vecs = 
- *     List.map2 (fun data sty ->
- *         Vector.Full { data; sty; lab = "" }
- *       ) vecs styles
- *   in
- *   let viewport = Viewport.AutoY { xsize = Units.mm 150.0 } in
- *   let result   = Scatter.plot ~options ~viewport ~data:{ domain; vecs } in
- *   let layout   = Plot.Cmd [result] in
- *   match name with
- *   | None -> 
- *     (\* SDL plot *\)
- *     Plot.plot_sdl layout
- *   | Some name ->
- *     (\* PDF plot *\)
- *     Plot.plot_pdf name layout *)
+let shapes =
+  let open Scatter in
+  let radius = 0.05 in
+  let length = 2.0 *. radius in
+  [ Dot { radius };
+    Circle { radius };
+    Square { length };
+    Cross { length };
+    Plus { length }    
+  ]
+
+let shapes_and_colors = List.cartesian_product shapes colors
+
+let assert_size xs ys =
+  if Array.length xs <> Array.length ys then
+    invalid_arg "Easy.scatter: xs/ys vectors of different sizes"
+
+let scatter ?name ?(options=[]) cloud_list =
+  let cloud_list = 
+    List.map (fun (xs, ys) ->
+        assert_size xs ys;
+        Array.map2 (fun x y -> Vlayout.Pt.pt x y) xs ys
+      ) cloud_list
+  in
+  let len = List.length cloud_list in
+  if len > List.length shapes_and_colors then
+    invalid_arg "Easy.scatter: too many clouds. Please use scatter module.";
+  let viewport = Viewport.AutoY { xsize = Units.mm 150.0 } in
+  let data     = 
+    List.combine cloud_list (List.take len shapes_and_colors)
+    |> List.map (fun (data, (shape, color)) ->
+        Scatter.{ data; plot_type = Scatter { shape; color } }
+      )
+  in
+  let result   = Scatter.plot ~options ~viewport ~data in
+  let layout   = Plot.Cmd [result] in
+  match name with
+  | None -> 
+    (* SDL plot *)
+    Plot.plot_sdl layout
+  | Some name ->
+    (* PDF plot *)
+    Plot.plot_pdf name layout
+  

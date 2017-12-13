@@ -1,10 +1,6 @@
-module Log = Log.Make(struct let section = "traj2d" end)
-
 open Vlayout (* for Pt *)
 open Utils
 open Batteries    
-
-module Vec = Owl.Vec
 
 type points = Pt.t array
 
@@ -29,6 +25,31 @@ type options = Frame.options
 
 type datum = { data : points; plot_type : plot_type }
 type data  = datum list
+
+(* When doing 2d scatter plots, it is painful to have to decide which style to use for which set of points. 
+   This function enumerates styles. *)
+let enum_shape =
+  let shape_of i radius =
+    let length = radius *. 2.0 in
+    match i mod 5 with
+    | 0 -> Dot { radius }
+    | 1 -> Circle { radius }
+    | 2 -> Square { length }
+    | 3 -> Cross { length }
+    | 4 -> Plus { length }
+    | _ -> failwith "impossible case"
+  in
+  let r = ref 0.05 in
+  Enum.range 0
+  |> Enum.map (fun i ->
+      let shape = shape_of i !r in
+      r := !r +. 0.02;
+      shape
+    )
+
+let enum_scatter =
+  Enum.cartesian_product Style.enum_colors enum_shape
+  |> Enum.map (fun (color, shape) -> Scatter { shape; color })
 
 
 let plot_scatter shape color data =
@@ -151,7 +172,7 @@ let plot_traj traj data =
 
 let plot ~(options : options list) ~viewport ~data =
   let frame = Frame.set_options Frame.default options in
-  begin match data with [] -> (Log.error "plot: empty data list on input"; exit 1) | _ -> () end;
+  begin match data with [] -> invalid_arg "plot: empty data list on input" | _ -> () end;
   let plot =
     List.fold_left (fun acc { data; plot_type } ->
         match plot_type with

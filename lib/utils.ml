@@ -1,7 +1,5 @@
 open Bigarray
 open Batteries
-
-module Log = Log.Make(struct let section = "utils" end)
                      
 type float_ref = { mutable x : float }
                    
@@ -39,7 +37,7 @@ let data_range (data : Owl.Vec.vec) =
   (minv.x, maxv.x)
 
 let interpolate a b n =
-  if n < 2 then (Log.error "interpolate: not enough interpolation steps"; exit 1);
+  if n < 2 then invalid_arg "interpolate: not enough interpolation steps";
   let d = (b -. a) /. (float (n-1)) in
   let rec loop x i =
     if i = (n-1) then

@@ -71,7 +71,7 @@ let last_stop l =
   
 let create path total_len =
   if not (path_correct path) then
-    (Log.fatal "interpolate_path: path is incorrect"; exit 0)
+    failwith "Gradient.create: path is incorrect"
   else
     let slices  = pair_list_elts path in
     let rslices,

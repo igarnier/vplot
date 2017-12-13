@@ -10,13 +10,14 @@ type axis = {
   label_to_tick : Units.mm;
   tick_length   : Units.mm;
   tick_num      : int;
-  (* TODO: label on axis *)
+  axis_label    : string
 }
 
 type axis_option =
   [ `Label_to_tick of Units.mm
   | `Tick_length of Units.mm
   | `Tick_num of int
+  | `Label of string
   ]
 
 type caption_pos = [ `Above | `Below ]
@@ -50,10 +51,10 @@ let natural_y = Units.mm 150.0
 
 
 let default_xaxis = 
-  { label_to_tick = Units.mm 2.0; tick_length = Units.mm 5.0; tick_num = 5 }
+  { label_to_tick = Units.mm 2.0; tick_length = Units.mm 5.0; tick_num = 5; axis_label = "" }
 
 let default_yaxis = 
-  { label_to_tick = Units.mm 2.0; tick_length = Units.mm 5.0; tick_num = 5 }
+  { label_to_tick = Units.mm 2.0; tick_length = Units.mm 5.0; tick_num = 5; axis_label = "" }
 
 
 let set_axis_option axis (opt : axis_option) =
@@ -61,6 +62,7 @@ let set_axis_option axis (opt : axis_option) =
   | `Label_to_tick label_to_tick -> { axis with label_to_tick }
   | `Tick_length tick_length     -> { axis with tick_length }
   | `Tick_num tick_num           -> { axis with tick_num }
+  | `Label axis_label            -> { axis with axis_label }
 
 let set_axis_options axis options =
   List.fold_left set_axis_option axis options
@@ -103,10 +105,7 @@ let default =
     yaxis
   }
 
-(* let text pos (glyph_width,glyph_height) text = *)
-(*   let len = String.length text in *)
-(*   let w   = (float len) *. glyph_width in *)
-(*   Cmds.text ~pos ~width:w ~height:glyph_height ~text *)
+let float_to_string f = Printf.sprintf "%.2f" f
 
 let text pos (text_size : Units.pt) str =
   Cmds.text ~pos ~size:(text_size:>float) ~text:str
@@ -120,12 +119,6 @@ let ticked_horizontal_axis (side : [`Up|`Down]) origin width xaxis text_size tic
         let p1 = Pt.pt xpos (Pt.y origin) in
         let p2 = Pt.pt xpos (Pt.y origin +. (xaxis.tick_length :> float)) in
         let tick = Cmds.segment ~p1 ~p2 in
-        (* let lpos = *)
-        (*   if Pt.y p2 > Pt.y p1 then *)
-        (*     p1 *)
-        (*   else *)
-        (*     p2 *)
-        (* in *)
         let pos  = match side with
           | `Up ->
             let lpos = if Pt.y p2 < Pt.y p1 then p1 else p2 in
@@ -139,7 +132,7 @@ let ticked_horizontal_axis (side : [`Up|`Down]) origin width xaxis text_size tic
         (* add a bit of space between the label and its anchor *)
         (* let lpos = Pt.plus lpos (Pt.pt 0.0 (~-. (abs_float (xaxis.label_to_tick :> float)))) in *)
         (* let pos  = { Cmds.pos = lpos; relpos = North } in *)
-        let str  = Common.float_to_string xlab in
+        let str  = float_to_string xlab in
         let labl = text pos text_size str in
         tick :: labl :: acc
       ) [] pos_x tick_labels
@@ -167,7 +160,7 @@ let ticked_vertical_axis (side : [`Left|`Right]) origin height yaxis text_size t
         in
         (* let lpos = Pt.plus lpos (Pt.pt (~-. (abs_float (yaxis.label_to_tick :> float))) 0.0) in *)
         (* let pos  = { Cmds.pos = lpos; relpos = East } in *)
-        let str  = Common.float_to_string ylab in
+        let str  = float_to_string ylab in
         let labl = text pos text_size str in
         tick :: labl :: acc
       ) [] pos_y tick_labels
@@ -199,15 +192,51 @@ let add_frame frm xvalues yvalues plot =
   let plot   = Cmds.scale ~xs:xscale ~ys:yscale ~subcommands:plot in
   let bbox   = Cmds.Bbox.scale xscale yscale bbox in
   let origin = Cmds.Bbox.sw bbox in
-  (* let glyphsz = compute_glyph_size frm.xaxis.tick_num frm.yaxis.tick_num in *)
   let xlbls  = subsample_values xvalues frm.xaxis.tick_num in
   let xaxis  = ticked_horizontal_axis `Down origin (natural_x :> float) frm.xaxis frm.text_size xlbls in
-  let ylbls  = subsample_values yvalues frm.yaxis.tick_num in
-  let yaxis  = ticked_vertical_axis `Left origin (natural_y :> float) frm.yaxis frm.text_size ylbls in
-  let cmds   =
+  (* adding x label *)
+  let xaxis =
+    if frm.xaxis.axis_label = "" then
+      xaxis
+    else
+      let xlblp  = Pt.((pt 0.0 ((Units.mm (~-. 5.0)) :> float)) + Cmds.Bbox.(s (of_commands xaxis))) in
+      let xlbl   =
+        Cmds.text
+          ~pos:Cmds.({ pos = xlblp; relpos = North }) 
+          ~size:(frm.text_size:> float) 
+          ~text:frm.xaxis.axis_label 
+      in
+      xlbl :: xaxis
+  in
+  (* adding y label *)
+  let ylbls = subsample_values yvalues frm.yaxis.tick_num in
+  let yaxis = ticked_vertical_axis `Left origin (natural_y :> float) frm.yaxis frm.text_size ylbls in
+  let yaxis =
+    if frm.yaxis.axis_label = "" then
+      yaxis
+    else
+      let halfpi = 0.5 *. acos (~-. 1.0) in
+      let text   = 
+        Cmds.text
+          ~pos:Cmds.{ pos = Pt.zero; relpos = Absolute } 
+          ~size:(frm.text_size:> float)
+          ~text:frm.yaxis.axis_label
+      in
+      let rtext = Cmds.rotate ~radians:halfpi ~subcommands:[text] in
+      let ylblp = Pt.((pt (Units.mm (~-. 5.0) :> float) 0.0) + Cmds.Bbox.(w (of_commands yaxis))) in
+      let ylbl =
+        Cmds.place
+          ~pos:Cmds.{ pos = ylblp; relpos = East } 
+          ~subcommands:[rtext]
+      in
+      ylbl :: yaxis
+  in
+  let commands = xaxis @ yaxis @ [plot] in
+  let commands =
     match frm.caption with
-    | None -> xaxis @ yaxis @ [plot]
+    | None -> commands
     | Some { caption_pos; caption } ->
+      let bbox = Cmds.Bbox.of_commands commands in
       let gap = (Bbox.height bbox) *. 0.1 in
       let pos =
         match caption_pos with
@@ -220,11 +249,11 @@ let add_frame frm xvalues yvalues plot =
           let p   = Pt.plus p (Pt.pt 0.0 (~-. gap)) in
           { Cmds.pos = p; relpos = North }
       in
-      let size = Units.pt (2.0 *. (frm.text_size :> float)) in
-      let lbl = text pos size caption in
+      let size = Units.pt (1.5 *. (frm.text_size :> float)) in
+      let lbl = Cmds.text ~pos ~size:(size :> float) ~text:caption in
       lbl :: (xaxis @ yaxis @ [plot])
   in
-  bbox, apply_frame_color frm.color cmds   
+  bbox, apply_frame_color frm.color commands
  
 let add_frame_with_options options xvalues yvalues plot =
   let frm    = set_options default options in
