@@ -10,4 +10,4 @@ val init_sdl : unit -> target
 
 val init_pdf : string -> target
 
-val display : target:target -> plot:plot -> unit
+val display : target:target -> plot:(unit -> plot) -> unit

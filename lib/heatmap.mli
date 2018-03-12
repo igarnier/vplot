@@ -11,28 +11,32 @@ type hmap_options =
   | `Blocksize of int * int
   | `State of state
   | `Axis of Frame.axis_option list
+  | `NoHeatbar
   ]
 
 type options = [ hmap_options | Frame.options ]
 
 type data =
-  | Mat of { xdomain : Owl.Vec.vec; ydomain : Owl.Vec.vec; mat : Owl.Mat.mat }
-  | Fun of { xdomain : Owl.Vec.vec; ydomain : Owl.Vec.vec; f : float -> float -> float }
+  | Mat of { xdomain : Owl.Mat.mat; ydomain : Owl.Mat.mat; mat : Owl.Mat.mat }
+  | Fun of { xdomain : Owl.Mat.mat; ydomain : Owl.Mat.mat; f : float -> float -> float }
 
 val default_state : unit -> state
+
+val default_gradient : gradient_spec
+val white_gradient : gradient_spec
 
 (* val plot_mat : *)
 (*   options:options list -> *)
 (*   viewport:Viewport.t -> *)
-(*   xdomain:Owl.Vec.vec -> *)
-(*   ydomain:Owl.Vec.vec -> *)
+(*   xdomain:Owl.Mat.mat -> *)
+(*   ydomain:Owl.Mat.mat -> *)
 (*   data:Owl.Mat.mat -> Cmds.t *)
 
 (* val plot_f : *)
 (*   options:options list -> *)
 (*   viewport:Viewport.t -> *)
-(*   xdomain:Owl.Vec.vec -> *)
-(*   ydomain:Owl.Vec.vec -> *)
+(*   xdomain:Owl.Mat.mat -> *)
+(*   ydomain:Owl.Mat.mat -> *)
 (*   f:(float -> float -> float) -> Cmds.t *)
 
 val plot :

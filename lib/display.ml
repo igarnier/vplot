@@ -108,8 +108,14 @@ let display_sdl window plot =
   let _ = Bigarray.Array1.fill sdl_pixels 0xFFFFFFFFl in
   (* 3. reshape bigarray to match Cairo's expectations *)
   let sdl_pixels =
-    let genarray = Bigarray.genarray_of_array1 sdl_pixels in
-    Bigarray.reshape_2 genarray width height (* screen_xsize screen_ysize *)
+    try
+      let genarray = Bigarray.genarray_of_array1 sdl_pixels in
+      Bigarray.reshape_2 genarray width height (* screen_xsize screen_ysize *)
+    with
+    | _ ->
+      let len = Bigarray.Array1.dim sdl_pixels in
+      let err_string = Printf.sprintf "Error while reshaping pixel array of length %d to screen size %d x %d" len width height in
+      (Sdl.log "%s" err_string; exit 1)
   in
   (* 4. Create a Cairo surface to write on the pixels *)
   let cairo_surface =
@@ -154,7 +160,7 @@ let sdl_loop window plot =
   let event = Sdl.Event.create () in
   try
     while true do
-      display_sdl window plot;
+      display_sdl window (plot ());
       while Sdl.poll_event (Some event) do
         let event_type = Sdl.Event.get event Sdl.Event.typ in
         if event_type = Sdl.Event.key_down then
@@ -193,5 +199,5 @@ let display_pdf filename plot =
 let display ~target ~plot =
   match target with
   | Sdl { window }   -> sdl_loop window plot
-  | Pdf { filename } -> display_pdf filename plot
+  | Pdf { filename } -> display_pdf filename (plot ())
                

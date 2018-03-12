@@ -1,6 +1,6 @@
 type vec =
-  | Full of { data: Owl.Vec.vec; sty: Vlayout.Style.t; lab: string }
-  | Simple of Owl.Vec.vec
+  | Full of { data: Owl.Mat.mat; sty: Vlayout.Style.t; lab: string }
+  | Simple of Owl.Mat.mat
 
 type state = {
   mutable min_value : float;
@@ -15,7 +15,7 @@ type options =
   | Frame.options
   ]
 
-type data = { domain : Owl.Vec.vec; vecs : vec list }
+type data = { domain : Owl.Mat.mat; vecs : vec list }
 
 val plot :
   options:options list ->

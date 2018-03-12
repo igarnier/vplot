@@ -22,7 +22,7 @@ let vector_range (data : Owl.Mat.mat) =
   done;
   (minv.x, maxv.x)
     
-let data_range (data : Owl.Vec.vec) =
+let data_range (data : Owl.Mat.mat) =
   let xdata = Owl.Mat.row_num data in
   let ydata = Owl.Mat.col_num data in
   let minv  = { x = max_float } in
