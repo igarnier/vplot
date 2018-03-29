@@ -32,6 +32,7 @@ type t =
     caption        : caption option;    
     xaxis          : axis;
     yaxis          : axis;
+    decorations    : Cmds.t list
   }
 
 type options =
@@ -42,6 +43,7 @@ type options =
   | `Caption     of string
   | `Xaxis       of axis_option list
   | `Yaxis       of axis_option list
+  | `Decoration  of Cmds.t list
   ]
 
 
@@ -88,6 +90,7 @@ let set_option frame (opt : options) =
     { frame with caption }    
   | `Xaxis xaxis_opts        -> { frame with xaxis = set_axis_options default_xaxis xaxis_opts }
   | `Yaxis yaxis_opts        -> { frame with yaxis = set_axis_options default_yaxis yaxis_opts }
+  | `Decoration cmds         -> { frame with decorations = frame.decorations @ cmds }
 
 let set_options frame options =
   List.fold_left set_option frame options
@@ -102,10 +105,12 @@ let default =
     text_size      = Units.pt 5.;
     caption        = None;
     xaxis;
-    yaxis
+    yaxis;
+    decorations    = []
   }
 
 let float_to_string f = Printf.sprintf "%.2f" f
+let float_to_string f = Printf.sprintf "%g" f
 
 let text pos (text_size : Units.pt) str =
   Cmds.text ~pos ~size:(text_size:>float) ~text:str
@@ -231,7 +236,7 @@ let add_frame frm xvalues yvalues plot =
       in
       ylbl :: yaxis
   in
-  let commands = xaxis @ yaxis @ [plot] in
+  let commands = xaxis @ yaxis @ [plot] @ frm.decorations in
   let commands =
     match frm.caption with
     | None -> commands
@@ -256,5 +261,5 @@ let add_frame frm xvalues yvalues plot =
   bbox, apply_frame_color frm.color commands
  
 let add_frame_with_options options xvalues yvalues plot =
-  let frm    = set_options default options in
+  let frm = set_options default options in
   add_frame frm xvalues yvalues plot

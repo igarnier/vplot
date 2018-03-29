@@ -4,7 +4,7 @@ authors: ["Ilias Garnier"]
 homepage: "https://github.com/igarnier/vplot"
 bug-reports: "https://github.com/igarnier/vplot/issues"
 dev-repo: "git+https://github.com/igarnier/vplot.git"
-license: "Apache-2.0"
+license: "MIT"
 build: [
   ["jbuilder" "build" "-p" name "-j" jobs]
 ]

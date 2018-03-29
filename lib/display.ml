@@ -37,7 +37,7 @@ let init_sdl  =
   match window_result with
   | Error (`Msg msg) -> Sdl.log "Create window error: %s" msg; exit 1
   | Ok window ->
-     Sdl.set_window_position window ~x:10 ~y:10;
+    Sdl.set_window_position window ~x:10 ~y:10;
      Sdl { window }
 
 let init_pdf filename = Pdf { filename }
@@ -76,6 +76,9 @@ let display_sdl window plot =
   let plot, w, h = process_plot 1.0 1.0 plot in (* TODO: make margins a parameter *)
   (* TODO: we should be able to get the PPI from the target display and scale the figure appropriately. *)
   let aspect     = w /. h in
+  let _ =
+    Sdl.get_display_dpi
+  in
   let iw = 800 in
   let ih = int_of_float ((float iw) /. aspect) in
   let sc = (float iw) /. w in
