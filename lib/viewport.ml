@@ -12,7 +12,10 @@ let apply vp plot =
   (* put a frame around the box *)
   let plot =
     let box = Cmds.box ~mins:(Cmds.Bbox.sw bbox) ~maxs:(Cmds.Bbox.ne bbox) in
-    let sty = Vlayout.Style.(make ~stroke:(solid_stroke black) ~width:None ~dash:None ~fill:None) in
+    let sty =
+      let open Vlayout.Style in
+      make ~stroke:(solid_stroke ~clr:black) ~width:None ~dash:None ~fill:None
+    in
     let box = Cmds.style ~style:sty ~subcommands:[box] in
     box :: plot
   in
@@ -33,10 +36,10 @@ let apply vp plot =
       let ar   = h /. w in
       let ys   = (ysize :> float) /. h in
       let xs   = ys /. ar in
-      (xs, ys)      
+      (xs, ys)
   in
   let cmds = Cmds.translate ~v:(Vlayout.Pt.scale (Cmds.Bbox.sw bbox) (~-. 1.0)) ~subcommands:plot in
   let cmds = Cmds.scale ~xs ~ys ~subcommands:[cmds] in
   Cmds.style
-    ~style:Vlayout.Style.(make ~stroke:(solid_stroke ~clr:black) ~width:None ~dash:None ~fill:None) 
+    ~style:Vlayout.Style.(make ~stroke:(solid_stroke ~clr:black) ~width:None ~dash:None ~fill:None)
     ~subcommands:[cmds]

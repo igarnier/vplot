@@ -1,0 +1,12 @@
+(executables
+ (names plots)
+ (libraries vplot))
+
+(rule
+ (targets plot.pdf)
+ (action (with-stdout-to ${@} (run ${test:plots.exe}))))
+
+(alias
+ (name runtest)
+ (deps    (:exe plots.exe))
+ (action (run %{exe})))

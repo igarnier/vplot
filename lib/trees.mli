@@ -24,4 +24,3 @@ val plot :
   viewport:Viewport.t ->
   data:'a data ->
   Cmds.t
-  

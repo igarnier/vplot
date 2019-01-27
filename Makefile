@@ -1,20 +1,20 @@
 default:
-	jbuilder build
+	dune build
 .PHONY: default
 
 all:
-	jbuilder build
-	jbuilder build @doc
+	dune build
+	dune build @doc
 .PHONY: all
 
 install:
-	jbuilder install
+	dune install
 .PHONY: install
 
 clean:
-	jbuilder clean
+	dune clean
 .PHONY: clean
 
 test:
-	jbuilder runtest
+	dune runtest
 .PHONY: test

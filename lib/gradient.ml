@@ -18,16 +18,16 @@ let ends_at_one ofs =
   | 1.0 :: _ -> true
   | _        -> false
 
-(* assumes (begins_at_zero ofs) = true *)                  
+(* assumes (begins_at_zero ofs) = true *)
 let list_increasing ofs =
   let _, result =
     List.fold_left
       (fun (prev, flag) elt ->
-        (elt, prev < elt && flag)
+         (elt, prev < elt && flag)
       ) (0.0, true) (List.tl ofs)
   in
   result
-    
+
 let path_correct path =
   let ofs = List.map snd path in
   begins_at_zero ofs
@@ -42,9 +42,9 @@ let pair_list_elts =
     | x :: tl -> (prev, x) :: (loop tl x)
   in
   fun list ->
-  match list with
-  | []      -> failwith "pair_list_elts: error"
-  | x :: tl -> loop tl x
+    match list with
+    | []      -> failwith "pair_list_elts: error"
+    | x :: tl -> loop tl x
 
 let interpolate total_len ((v1, ofs1), (v2, ofs2)) =
   let deltaofs = ofs2 -. ofs1 in
@@ -68,7 +68,7 @@ let split_slices_by_colors slices =
 let last_stop l =
   let (clr, _) = List.hd (List.rev l) in
   clr
-  
+
 let create path total_len =
   if not (path_correct path) then
     failwith "Gradient.create: path is incorrect"
@@ -83,6 +83,5 @@ let create path total_len =
     let lastclr = last_stop path in
     let rarr    = Array.(append (concat rslices) [| lastclr.Vlayout.Style.r |]) in
     let garr    = Array.(append (concat gslices) [| lastclr.Vlayout.Style.g |]) in
-    let barr    = Array.(append (concat bslices) [| lastclr.Vlayout.Style.b |]) in    
+    let barr    = Array.(append (concat bslices) [| lastclr.Vlayout.Style.b |]) in
     { rarr; garr; barr }
-    

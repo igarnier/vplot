@@ -47,8 +47,10 @@ let default_options =
 let parse_options (options : options list) =
   List.fold_left (fun options_rec opt ->
       match opt with
-      | `Deltax (deltax : Units.mm) -> { options_rec with deltax = (deltax :> float) }
-      | `Deltay (deltay : Units.mm) -> { options_rec with deltay = (deltay :> float) }
+      | `Deltax (deltax : Units.mm) ->
+        { options_rec with deltax = (deltax :> float) }
+      | `Deltay (deltay : Units.mm) ->
+        { options_rec with deltay = (deltay :> float) }
       | `Scalex scalex -> { options_rec with scalex }
       | `Scaley scaley -> { options_rec with scaley }
       | `Halign halign   -> { options_rec with halign }
@@ -82,17 +84,17 @@ let rec plot_tree params lblfunc (tree : 'a id t) =
     Cmds.cmd (decl :: cmds)
   | `Node({ elt; id }, subtrees) ->
     let cmds     = lblfunc elt in
-    let params   = { params with 
-                     deltax = params.deltax *. params.scalex; 
-                     deltay = params.deltay *. params.scaley } 
+    let params   = { params with
+                     deltax = params.deltax *. params.scalex;
+                     deltay = params.deltay *. params.scaley }
     in
-    let subplots = 
+    let subplots =
       Cmds.hbox
         ~pos:params.halign
-        ~deltax:params.deltax 
-        (List.map (plot_tree params lblfunc) subtrees) 
+        ~deltax:params.deltax
+        (List.map (plot_tree params lblfunc) subtrees)
     in
-    let subnames = List.map (function `Node({ id }, _) -> id) subtrees in
+    let subnames = List.map (function `Node({ id ; _ }, _) -> id) subtrees in
     let ndecl    = Cmds.declpt ~pt:(north cmds) ~name:id in
     let sdecl    = Cmds.declpt ~pt:(south cmds) ~name:(-id) in
     let nodes =
@@ -101,8 +103,8 @@ let rec plot_tree params lblfunc (tree : 'a id t) =
         ~deltay:params.deltay
         [Cmds.cmd (sdecl::ndecl::cmds); subplots]
     in
-    List.fold_left (fun layout id' -> 
-        Cmds.arrow ~start:(-id) ~finish:id' ~sty:Cmds.Arrow.default_style layout
+    List.fold_left (fun layout id' ->
+        Cmds.arrow ~start:~-id ~finish:id' ~sty:Cmds.Arrow.default_style layout
       ) nodes subnames
 
 open Vlayout
@@ -115,11 +117,11 @@ let rec plot_dendrogram params lblfunc (tree : 'a id t) =
     decl :: cmds
   | `Node({ elt; id }, subtrees) ->
     let lbel, h  = lblfunc elt in
-    let params   = { params with 
-                     deltax = params.deltax *. params.scalex; 
+    let params   = { params with
+                     deltax = params.deltax *. params.scalex;
                      deltay = params.deltay *. params.scaley } in
-    let subplots = 
-      List.map (plot_dendrogram params lblfunc) subtrees 
+    let subplots =
+      List.map (plot_dendrogram params lblfunc) subtrees
     in
     let subplots =
       List.map (fun cmds -> Cmds.cmd cmds) subplots
@@ -136,13 +138,14 @@ let rec plot_dendrogram params lblfunc (tree : 'a id t) =
     let cmds  = Cmds.emit_commands nodes in
     let map   = Cmds.collect_declared_points cmds in
     let root  = Cmds.NameMap.find (-id) map in
-    let pts   = List.map (function `Node({ id }, _) -> Cmds.NameMap.find id map) subtrees in
+    let pts   = List.map (function `Node({ id ; _ }, _) ->
+        Cmds.NameMap.find id map) subtrees in
     let max_y = List.max (List.map Pt.y pts) in
     let deltay = Pt.y root -. max_y in
     let splity = max_y +. 0.1 *. deltay in
     let subroot = Pt.pt (Pt.x root) splity in
     let seg = Cmds.segment ~p1:root ~p2:subroot in
-    let hbar = 
+    let hbar =
       let fst = List.hd pts in
       let lst = List.hd (List.rev pts) in
       Cmds.segment ~p1:(Pt.pt (Pt.x fst) splity) ~p2:(Pt.pt (Pt.x lst) splity)
@@ -153,11 +156,11 @@ let rec plot_dendrogram params lblfunc (tree : 'a id t) =
         ) pts
     in
     (seg :: hbar :: vbars) @ cmds
-    (* List.fold_left (fun layout id' -> *)
-    (*     Cmds.arrow ~start:(-id) ~finish:id' ~sty:Cmds.Arrow.default_style layout *)
-    (*   ) nodes subnames *)
-  
-      
+(* List.fold_left (fun layout id' -> *)
+(*     Cmds.arrow ~start:(-id) ~finish:id' ~sty:Cmds.Arrow.default_style layout *)
+(*   ) nodes subnames *)
+
+
 let plot ~options ~viewport ~data =
   let params = parse_options options in
   let layout =

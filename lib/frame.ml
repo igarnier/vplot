@@ -2,9 +2,9 @@ open Vlayout
 
 type plot_type =
   | LinLin
-(*| LogLin
-  | LinLog
-  | LogLog *)
+  (*| LogLin
+    | LinLog
+    | LogLog *)
 
 type axis = {
   label_to_tick : Units.mm;
@@ -29,7 +29,7 @@ type t =
     plot_type      : plot_type;
     color          : Style.color;
     text_size      : Units.pt;
-    caption        : caption option;    
+    caption        : caption option;
     xaxis          : axis;
     yaxis          : axis;
     decorations    : Cmds.t list
@@ -52,10 +52,10 @@ let natural_x = Units.mm 150.0
 let natural_y = Units.mm 150.0
 
 
-let default_xaxis = 
+let default_xaxis =
   { label_to_tick = Units.mm 2.0; tick_length = Units.mm 5.0; tick_num = 5; axis_label = "" }
 
-let default_yaxis = 
+let default_yaxis =
   { label_to_tick = Units.mm 2.0; tick_length = Units.mm 5.0; tick_num = 5; axis_label = "" }
 
 
@@ -74,7 +74,7 @@ let set_option frame (opt : options) =
   | `Plot_type plot_type     -> { frame with plot_type }
   | `Color color             -> { frame with color }
   | `Text_size text_size     -> { frame with text_size }
-  | `Caption_pos caption_pos -> 
+  | `Caption_pos caption_pos ->
     let caption =
       (match frame.caption with
        | None -> Some { caption_pos; caption = "" }
@@ -87,7 +87,7 @@ let set_option frame (opt : options) =
        | None -> Some { caption_pos = `Above; caption }
        | Some cpt -> Some { cpt with caption })
     in
-    { frame with caption }    
+    { frame with caption }
   | `Xaxis xaxis_opts        -> { frame with xaxis = set_axis_options default_xaxis xaxis_opts }
   | `Yaxis yaxis_opts        -> { frame with yaxis = set_axis_options default_yaxis yaxis_opts }
   | `Decoration cmds         -> { frame with decorations = frame.decorations @ cmds }
@@ -95,7 +95,7 @@ let set_option frame (opt : options) =
 let set_options frame options =
   List.fold_left set_option frame options
 
-let default = 
+let default =
   let xaxis = default_xaxis in
   let yaxis = default_yaxis in
   {
@@ -109,7 +109,7 @@ let default =
     decorations    = []
   }
 
-let float_to_string f = Printf.sprintf "%.2f" f
+let _float_to_string f = Printf.sprintf "%.2f" f
 let float_to_string f = Printf.sprintf "%g" f
 
 let text pos (text_size : Units.pt) str =
@@ -207,9 +207,9 @@ let add_frame frm xvalues yvalues plot =
       let xlblp  = Pt.((pt 0.0 ((Units.mm (~-. 5.0)) :> float)) + Cmds.Bbox.(s (of_commands xaxis))) in
       let xlbl   =
         Cmds.text
-          ~pos:Cmds.({ pos = xlblp; relpos = North }) 
-          ~size:(frm.text_size:> float) 
-          ~text:frm.xaxis.axis_label 
+          ~pos:Cmds.({ pos = xlblp; relpos = North })
+          ~size:(frm.text_size:> float)
+          ~text:frm.xaxis.axis_label
       in
       xlbl :: xaxis
   in
@@ -221,9 +221,9 @@ let add_frame frm xvalues yvalues plot =
       yaxis
     else
       let halfpi = 0.5 *. acos (~-. 1.0) in
-      let text   = 
+      let text   =
         Cmds.text
-          ~pos:Cmds.{ pos = Pt.zero; relpos = Absolute } 
+          ~pos:Cmds.{ pos = Pt.zero; relpos = Absolute }
           ~size:(frm.text_size:> float)
           ~text:frm.yaxis.axis_label
       in
@@ -231,7 +231,7 @@ let add_frame frm xvalues yvalues plot =
       let ylblp = Pt.((pt (Units.mm (~-. 5.0) :> float) 0.0) + Cmds.Bbox.(w (of_commands yaxis))) in
       let ylbl =
         Cmds.place
-          ~pos:Cmds.{ pos = ylblp; relpos = East } 
+          ~pos:Cmds.{ pos = ylblp; relpos = East }
           ~subcommands:[rtext]
       in
       ylbl :: yaxis
@@ -259,7 +259,7 @@ let add_frame frm xvalues yvalues plot =
       lbl :: (xaxis @ yaxis @ [plot])
   in
   bbox, apply_frame_color frm.color commands
- 
+
 let add_frame_with_options options xvalues yvalues plot =
   let frm = set_options default options in
   add_frame frm xvalues yvalues plot

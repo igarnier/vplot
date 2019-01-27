@@ -1,4 +1,3 @@
-open Tsdl
 
 (** The kind of plots that can be performed. *)
 type plot =
@@ -23,7 +22,7 @@ let rec to_vlayout layout =
       | Vector { data; options } ->
         Vector.plot ~options ~viewport:vp ~data
       | Scatter { data; options } ->
-        Scatter.plot ~options ~viewport:vp ~data        
+        Scatter.plot ~options ~viewport:vp ~data
     in
     Cmds.cmd [cmd]
   | Cmd cmds ->
@@ -39,9 +38,8 @@ let plot_pdf filename layout =
   let layout = to_vlayout layout in
   let target = Display.init_pdf filename in
   Display.display ~target ~plot:(fun () -> layout)
-    
+
 let plot_sdl layout =
   let layout = to_vlayout layout in
   let target = Display.init_sdl () in
   Display.display ~target ~plot:(fun () -> layout)
-  

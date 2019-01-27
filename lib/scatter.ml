@@ -1,6 +1,5 @@
 open Vlayout (* for Pt *)
-open Utils
-open Batteries    
+open Batteries
 
 type points = Pt.t array
 
@@ -26,7 +25,7 @@ type options = Frame.options
 type datum = { data : points; plot_type : plot_type }
 type data  = datum list
 
-(* When doing 2d scatter plots, it is painful to have to decide which style to use for which set of points. 
+(* When doing 2d scatter plots, it is painful to have to decide which style to use for which set of points.
    This function enumerates styles. *)
 let enum_shape =
   let shape_of i radius =
@@ -142,8 +141,8 @@ let draw_trajectory_relspeed time data =
         ) speeds
     in
     let acc = ref [] in
-    for i = 1 to Array.length data - 1 do 
-     let p1   = data.(i - 1) in
+    for i = 1 to Array.length data - 1 do
+      let p1   = data.(i - 1) in
       let p2   = data.(i) in
       if p1 != p2 then
         let seg  = Cmds.segment ~p1 ~p2 in

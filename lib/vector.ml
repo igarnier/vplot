@@ -1,7 +1,6 @@
 open Batteries
 open Vlayout (* for Pt *)
-open Utils
-    
+
 type vec =
   | Full of { data : Owl.Mat.mat; sty : Style.t; lab : string }
   | Simple of Owl.Mat.mat
@@ -37,12 +36,12 @@ let default_options () =
     state = default_state ()
   }
 
-let set_option vector_opt (opt : vector_options) =
+let set_option _vector_opt (opt : vector_options) =
   match opt with
   | `State state -> { state }
 
 let parse_options (frame_opt, vector_opt) (option_list : options list) =
-  List.fold_left 
+  List.fold_left
     (fun (frame_opt, vector_opt) opt ->
        match opt with
        | #Frame.options as o ->
@@ -50,22 +49,22 @@ let parse_options (frame_opt, vector_opt) (option_list : options list) =
        | #vector_options as o ->
          (frame_opt, set_option vector_opt o)
     ) (frame_opt, vector_opt) option_list
- 
+
 
 let get_data = function
-  | Full { data } | Simple data -> data
+  | Full { data ; _ } | Simple data -> data
 
-let get_label = function
-  | Full { lab } -> lab
+let _get_label = function
+  | Full { lab ; _ } -> lab
   | Simple _     -> ""
 
-let map_data f =
+let _map_data f =
   function
   | Full { data; sty; lab } ->
     Full { data = f data; sty; lab }
   | Simple data -> Simple (f data)
 
-let extract_ticks vec ticks =
+let _extract_ticks vec ticks =
   let len = Owl.Mat.numel vec in
   if ticks < 2
   then invalid_arg "extract_ticks: not enough ticks on axis.";
@@ -78,17 +77,17 @@ let extract_ticks vec ticks =
   done;
   List.rev ((Owl.Mat.get vec 0 (len-1)) :: !acc)
 
-(* Samples should be selected preferentially where the function has a lot of curvature, 
-   which for a triple of consecutive points corresponds to how "unflat" is the angle
-   that they form. I.e. if we have data points y_1, y_2, y_3 (and we assume the x_i 
-   are equispaced) then we get rid of y_2 if (y_1 - y_2) dot (y_3 - y_2) < threshold (TODO: check)
-*)
+(* Samples should be selected preferentially where the function has a lot
+   of curvature, which for a triple of consecutive points corresponds to how
+   "unflat" is the angle that they form. I.e. if we have data points y_1, y_2, y_3
+   (and we assume the x_i are equispaced) then we get rid of y_2
+   if (y_1 - y_2) dot (y_3 - y_2) < threshold (TODO: check) *)
 let subsample data =
   let len = Owl.Mat.numel data in
   let rec loop vprev vnow inow vnext acc =
     if inow = (len-2) then (inow + 1) :: inow :: acc
     else
-      let dot   = (vprev -. vnow) *. (vnext -. vnow) in (* TODO: normalise length of these vectors*)
+      let _dot  = (vprev -. vnow) *. (vnext -. vnow) in (* TODO: normalise length of these vectors*)
       let iprev = inow
       and vprev = vnow
       and vnow  = vnext
@@ -123,8 +122,11 @@ let vectors_enveloppe (data:Owl.Mat.mat list) min_value max_value =
 let draw_curve domain vec =
   let vector, sty =
     match vec with
-    | Full { data; sty } -> data, sty
-    | Simple data -> data, Vlayout.Style.(make ~stroke:(solid_stroke red) ~width:None  ~dash:None~fill:None)
+    | Full { data ; sty ; _ } -> data, sty
+    | Simple data ->
+      let open Vlayout.Style in
+      let sty = make ~stroke:(solid_stroke ~clr:red) ~width:None  ~dash:None~fill:None in
+      data, sty
   in
   let samples = subsample vector in
   (* let samples = List.range 0 `To (Owl.Vec.numel vector - 1) in *)
@@ -145,7 +147,7 @@ let draw_curve domain vec =
         ) ([], pt) tl
     in
     Cmds.([style ~style:sty ~subcommands:segments])
-  
+
 let plot_internal frame { state } viewport domain data =
   begin match data with [] -> invalid_arg "plot_internal: empty data list on input" | _ -> () end;
   let points = List.map get_data data in

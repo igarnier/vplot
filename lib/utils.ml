@@ -1,8 +1,7 @@
-open Bigarray
 open Batteries
-                     
+
 type float_ref = { mutable x : float }
-                   
+
 let min (f : float) (f' : float) =
   if f < f' then f
   else f'
@@ -21,7 +20,7 @@ let vector_range (data : Owl.Mat.mat) =
     maxv.x <- max maxv.x v
   done;
   (minv.x, maxv.x)
-    
+
 let data_range (data : Owl.Mat.mat) =
   let xdata = Owl.Mat.row_num data in
   let ydata = Owl.Mat.col_num data in
@@ -63,12 +62,12 @@ let rec _all_elements_equal x tl =
   match tl with
   | [] -> true
   | y :: tl ->
-     (y = x) && (_all_elements_equal x tl)
+    (y = x) && (_all_elements_equal x tl)
 
 let all_elements_equal l =
   match l with
   | [] | [_] -> true
   | x :: tl ->
-     _all_elements_equal x tl
-       
+    _all_elements_equal x tl
+
 let (++) f g x = g (f x)

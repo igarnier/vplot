@@ -1,11 +1,11 @@
 open Vlayout
 open Bigarray
 
-                     
+
 type gradient_spec =
-  { 
-    gradient_path : Gradient.path; 
-    gradient_steps : int 
+  {
+    gradient_path : Gradient.path;
+    gradient_steps : int
   }
 
 type palette =
@@ -30,8 +30,12 @@ type hmap_options =
 type options = [ hmap_options | Frame.options ]
 
 type data =
-  | Mat of { xdomain : Owl.Mat.mat; ydomain : Owl.Mat.mat; mat : Owl.Mat.mat }
-  | Fun of { xdomain : Owl.Mat.mat; ydomain : Owl.Mat.mat; f : float -> float -> float }
+  | Mat of { xdomain : Owl.Mat.mat
+           ; ydomain : Owl.Mat.mat
+           ; mat     : Owl.Mat.mat }
+  | Fun of { xdomain : Owl.Mat.mat
+           ; ydomain : Owl.Mat.mat
+           ; f : float -> float -> float }
 
 type hmap_options_rec =
   {
@@ -51,14 +55,14 @@ let default_state () =
 let default_blocksize = (1,1)
 
 let default_gradient =
-  let gradient_path = 
+  let gradient_path =
     [ (Style.black, 0.0); (Style.gray 0.5, 0.5); (Style.red, 1.0) ]
   in
   let gradient_steps = 50 in
   { gradient_path; gradient_steps }
 
 let white_gradient =
-  let gradient_path = 
+  let gradient_path =
     [ (Style.white, 0.0); (* (Style.gray 0.5, 0.5); *) (Style.red, 1.0) ]
   in
   let gradient_steps = 50 in
@@ -66,9 +70,9 @@ let white_gradient =
 
 
 let default_hbar_axis =
-  { 
-    Frame.label_to_tick = Units.mm 2.; 
-    tick_length = Units.mm 5.0; 
+  {
+    Frame.label_to_tick = Units.mm 2.;
+    tick_length = Units.mm 5.0;
     tick_num = 5;
     axis_label = ""
   }
@@ -88,11 +92,11 @@ let set_option hmap (opt : hmap_options) =
   | `Blocksize blocksize -> { hmap with blocksize }
   | `State state         -> { hmap with state }
   | `NoHeatbar           -> { hmap with no_heatbar = true }
-  | `Axis hbar_opts      -> 
+  | `Axis hbar_opts      ->
     { hmap with hbar_axis = Frame.set_axis_options (default_hmap_options ()).hbar_axis hbar_opts }
 
 let parse_options (frame, hmap) (option_list : options list) =
-  List.fold_left 
+  List.fold_left
     (fun (frame, hmap) opt ->
        match opt with
        | #Frame.options as o ->
@@ -121,7 +125,7 @@ let write_data_to_image_noblock { palette; width } minv maxv xlength ylength dat
     done
   done;
   plot_image
-    
+
 let write_data_to_image block_x block_y { palette; width } minv maxv xlength ylength data =
   let ximage     = xlength * block_x
   and yimage     = ylength * block_y in
@@ -148,7 +152,7 @@ let write_data_to_image block_x block_y { palette; width } minv maxv xlength yle
   plot_image
 
 let plot_heatmap palette state blocksize xdomain ydomain data =
-  let xlength    = Owl.Mat.numel xdomain in  
+  let xlength    = Owl.Mat.numel xdomain in
   let ylength    = Owl.Mat.numel ydomain in
   let xdata      = Owl.Mat.row_num data in
   let ydata      = Owl.Mat.col_num data in
@@ -174,13 +178,13 @@ let plot_heatbar width height color hbar_axis text_size ticks gradient_path =
   let heatbar_style   = Style.(make
                                  ~stroke:(solid_stroke ~clr:color)
                                  ~width:None
-                                 ~fill:(Some (vertical_gradient gradient_path))
+                                 ~fill:(Some (vertical_gradient ~path:gradient_path))
                                  ~dash:None
                               )
   in
   let mins      = Pt.zero in
   let maxs      = Pt.pt width height in
-  let bar       = Cmds.style ~style:heatbar_style ~subcommands:[ Cmds.box mins maxs ] in
+  let bar       = Cmds.style ~style:heatbar_style ~subcommands:[ Cmds.box ~mins ~maxs ] in
   let origin    = Pt.pt (Pt.x maxs) (Pt.y mins) in
   let bar_ticks = Frame.ticked_vertical_axis `Right origin height hbar_axis text_size ticks in
   let bar_ticks =

@@ -25,6 +25,6 @@ type data  = datum list
 val enum_shape   : shape Batteries.Enum.t
 val enum_scatter : plot_type Batteries.Enum.t
 
-val plot : 
+val plot :
   options:options list ->
   viewport:Viewport.t -> data:data -> Cmds.t
