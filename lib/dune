@@ -1,4 +1,4 @@
 (library
  (name        vplot)
  (public_name vplot)
- (libraries owl vlayout cairo2 tsdl batteries gg))
+ (libraries vlayout cairo2 tsdl gg))

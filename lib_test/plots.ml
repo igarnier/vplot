@@ -32,9 +32,9 @@ let _ = Plot.plot_pdf "diagonal.pdf" plot
 
 (* Test heatmap plot *)
 
-let xdomain = Owl.Mat.linspace 0.0 (2. *. pi) 300
+let xdomain = Dense_float64_vec.of_array (Utils.linspace 0.0 (2. *. pi) 300)
 
-let ydomain = Owl.Mat.linspace 0.0 (2. *. pi) 300
+let ydomain = Dense_float64_vec.of_array (Utils.linspace 0.0 (2. *. pi) 300)
 
 let f x y = (cos x) *. (cos y)
 
@@ -54,12 +54,11 @@ let _ = Plot.plot_pdf "heatmap.pdf"  heatmap
 let viewport =
   Viewport.FixedSize { xsize = Units.mm 150.0; ysize = Units.mm 100.0 }
 
-let domain = Owl.Mat.linspace 0.0 (3. *. pi) 150
 
-let vec1 = Owl.Mat.cos domain
-(* let vec1 = Owl.Vec.mul_scalar vec1 10.0 *)
-
-let vec2 = Owl.Mat.sin domain
+let array  = Utils.linspace 0.0 (3. *. pi) 150
+let domain = Dense_float64_vec.of_array array
+let vec1 = Dense_float64_vec.of_array (Array.map cos array)
+let vec2 = Dense_float64_vec.of_array (Array.map sin array)
 
 let vector =
   Plot.Plot { vp   = viewport;
@@ -79,31 +78,41 @@ let viewport =
   Viewport.AutoY { xsize = Units.mm 150.0 }
 
 let mean0 =
-  Owl.Mat.of_arrays [| [| 1.0; ~-. 0.5 |] |]
+  Dense_float64_vec.of_array [| 1.0; ~-. 0.5 |]
 
 let mean1 =
-  Owl.Mat.of_arrays [| [| 2.5;  2.0 |] |]
+  Dense_float64_vec.of_array [| 2.5;  2.0 |]
 
 let mean2 =
-  Owl.Mat.of_arrays [| [| ~-. 1.5;  0.0 |] |]
+  Dense_float64_vec.of_array [| ~-. 1.5;  0.0 |]
 
-let vec2pt vec = Vlayout.Pt.pt (Owl.Mat.get vec 0 0) (Owl.Mat.get vec 0 1)
+let vec2pt vec =
+  Vlayout.Pt.pt (Dense_float64_vec.get vec 0) (Dense_float64_vec.get vec 1)
+
+let gaussian_2 =
+  let gaussian = StaTz.Stats.gaussian ~mean:0.0 ~std:1.0 in
+  fun () ->
+  let x = StaTz.Stats.sample_gen gaussian in
+  let y = StaTz.Stats.sample_gen gaussian in
+  Dense_float64_vec.of_array [| x ; y |]
+
+open StaTz.Dense.Float64
 
 let dataset0 =
   let open Scatter in
-  { data = Array.init 60 (fun _ -> vec2pt (Owl.Mat.add mean0 (Owl.Mat.gaussian 1 2)));
+  { data = Array.init 60 (fun _ -> vec2pt (Vec.add mean0 (gaussian_2 ())));
     plot_type = Scatter { shape = Circle { radius = 0.05 }; color = Style.black }
   }
 
 let dataset1 =
   let open Scatter in
-  { data = Array.init 60 (fun _ -> vec2pt (Owl.Mat.add mean1 (Owl.Mat.gaussian 1 2)));
+  { data = Array.init 60 (fun _ -> vec2pt (Vec.add mean1 (gaussian_2 ())));
     plot_type = Scatter { shape = Square { length = 0.05 }; color = Style.red }
   }
 
 let dataset2 =
   let open Scatter in
-  { data = Array.init 60 (fun _ -> vec2pt (Owl.Mat.add mean2 (Owl.Mat.gaussian 1 2)));
+  { data = Array.init 60 (fun _ -> vec2pt (Vec.add mean2 (gaussian_2 ())));
     plot_type = Scatter { shape = Cross { length = 0.05 }; color = Style.green }
   }
 
@@ -123,12 +132,12 @@ let plot =
   Trees.plot
     ~options:[]
     ~viewport
-    ~data:{ tree; 
+    ~data:{ tree;
             tree_type = Trees.Dendrogram
-                { 
-                  lbl = (fun i -> 
+                {
+                  lbl = (fun i ->
                       [ Cmds.text
-                          ~pos:{ pos = Vlayout.Pt.zero; relpos = Cmds.North } 
+                          ~pos:{ pos = Vlayout.Pt.zero; relpos = Cmds.North }
                           ~size:10.0
                           ~text:(string_of_int i)
                       ], 10.0

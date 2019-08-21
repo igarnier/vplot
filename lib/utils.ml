@@ -1,4 +1,3 @@
-open Batteries
 
 type float_ref = { mutable x : float }
 
@@ -10,25 +9,25 @@ let max (f : float) (f' : float) =
   if f < f' then f'
   else f
 
-let vector_range (data : Owl.Mat.mat) =
-  let len   = Owl.Mat.col_num data in
+let vector_range (data : Dense_float64_vec.t) =
+  let len   = Dense_float64_vec.length data in
   let minv  = { x = max_float } in
   let maxv  = { x = (-. max_float) } in
   for i = 0 to len -1 do
-    let v = Owl.Mat.get data 0 i in
+    let v = Dense_float64_vec.get data i in
     minv.x <- min minv.x v;
     maxv.x <- max maxv.x v
   done;
   (minv.x, maxv.x)
 
-let data_range (data : Owl.Mat.mat) =
-  let xdata = Owl.Mat.row_num data in
-  let ydata = Owl.Mat.col_num data in
+let data_range (data : Dense_float64_mat.t) =
+  let xdata = Dense_float64_mat.dim1 data in
+  let ydata = Dense_float64_mat.dim2 data in
   let minv  = { x = max_float } in
   let maxv  = { x = (-. max_float) } in
   for i = 0 to xdata -1 do
     for j = 0 to ydata -1 do
-      let v = Owl.Mat.get data i j in
+      let v = Dense_float64_mat.get data i j in
       minv.x <- min minv.x v;
       maxv.x <- max maxv.x v
     done
@@ -45,7 +44,6 @@ let interpolate a b n =
       x :: (loop (x +. d) (i+1))
   in
   loop a 0
-
 
 let linspace start finish steps =
   if steps <= 0 then

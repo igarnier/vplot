@@ -1,4 +1,3 @@
-open Batteries
 
 let colors  = [ Vlayout.Style.red;
                 Vlayout.Style.green;
@@ -45,11 +44,26 @@ let all_styles = solid_styles @ dot_styles @ medium_styles @ large_styles
 
 let styles_num = List.length all_styles
 
+let rec take_n n l acc =
+  match l with
+  | [] ->
+     if n > 0 then
+       Pervasives.failwith "take_n"
+     else
+       List.rev acc
+  | hd :: tl ->
+     if n = 0 then
+       List.rev acc
+     else
+       take_n (n - 1) tl (hd :: acc)
+
+let take_n n l = take_n n l []
+
 let plot ?name ?(options=[]) domain vecs =
   let vecs_num = List.length vecs in
   if vecs_num > styles_num then
     invalid_arg "Easy.plot: too many vectors. Please use Plot module.";
-  let styles = List.take vecs_num all_styles in
+  let styles = take_n vecs_num all_styles in
   let vecs =
     List.map2 (fun data sty ->
         Vector.Full { data; sty; lab = "" }
@@ -77,7 +91,15 @@ let shapes =
     Plus { length }
   ]
 
-let shapes_and_colors = List.cartesian_product shapes colors
+let rec cartesian_product l1 l2 acc =
+  match l1 with
+  | [] -> acc
+  | hd :: tl ->
+     cartesian_product tl l2 ((List.map (fun y -> (hd, y)) l2) @ acc)
+
+let cartesian_product l1 l2 = cartesian_product l1 l2 []
+
+let shapes_and_colors = cartesian_product shapes colors
 
 let assert_size xs ys =
   if Array.length xs <> Array.length ys then
@@ -95,7 +117,7 @@ let scatter ?name ?(options=[]) cloud_list =
     invalid_arg "Easy.scatter: too many clouds. Please use scatter module.";
   let viewport = Viewport.AutoY { xsize = Units.mm 150.0 } in
   let data     =
-    List.combine cloud_list (List.take len shapes_and_colors)
+    List.combine cloud_list (take_n len shapes_and_colors)
     |> List.map (fun (data, (shape, color)) ->
         Scatter.{ data; plot_type = Scatter { shape; color } }
       )

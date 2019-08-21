@@ -17,8 +17,12 @@ type hmap_options =
 type options = [ hmap_options | Frame.options ]
 
 type data =
-  | Mat of { xdomain : Owl.Mat.mat; ydomain : Owl.Mat.mat; mat : Owl.Mat.mat }
-  | Fun of { xdomain : Owl.Mat.mat; ydomain : Owl.Mat.mat; f : float -> float -> float }
+  | Mat of { xdomain : Dense_float64_vec.t
+           ; ydomain : Dense_float64_vec.t
+           ; mat     : Dense_float64_mat.t }
+  | Fun of { xdomain : Dense_float64_vec.t
+           ; ydomain : Dense_float64_vec.t
+           ; f : float -> float -> float }
 
 val default_state : unit -> state
 

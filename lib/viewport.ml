@@ -1,5 +1,3 @@
-open Batteries
-
 type t =
   | AutoX     of { ysize : Units.mm }
   | AutoY     of { xsize : Units.mm }

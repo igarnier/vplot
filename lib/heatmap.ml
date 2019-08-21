@@ -30,11 +30,11 @@ type hmap_options =
 type options = [ hmap_options | Frame.options ]
 
 type data =
-  | Mat of { xdomain : Owl.Mat.mat
-           ; ydomain : Owl.Mat.mat
-           ; mat     : Owl.Mat.mat }
-  | Fun of { xdomain : Owl.Mat.mat
-           ; ydomain : Owl.Mat.mat
+  | Mat of { xdomain : Dense_float64_vec.t
+           ; ydomain : Dense_float64_vec.t
+           ; mat     : Dense_float64_mat.t }
+  | Fun of { xdomain : Dense_float64_vec.t
+           ; ydomain : Dense_float64_vec.t
            ; f : float -> float -> float }
 
 type hmap_options_rec =
@@ -118,7 +118,7 @@ let write_data_to_image_noblock { palette; width } minv maxv xlength ylength dat
   let width      = float width in
   for i = 0 to xlength - 1 do
     for j = 0 to ylength - 1 do
-      let f = Owl.Mat.get data i j in
+      let f = Dense_float64_mat.get data i j in
       let f = clamp ((f -. minv) *. ilen) in
       let c = int_of_float (width *. f) in
       Image.set plot_image i j palette.{c}
@@ -134,7 +134,7 @@ let write_data_to_image block_x block_y { palette; width } minv maxv xlength yle
   let width      = float width in
   for i = 0 to xlength - 1 do
     for j = 0 to ylength - 1 do
-      let f = Owl.Mat.get data i j in
+      let f = Dense_float64_mat.get data i j in
       let f = clamp ((f -. minv) *. ilen) in
       let c = int_of_float (width *. f) in
       let c = palette.{c} in
@@ -152,10 +152,10 @@ let write_data_to_image block_x block_y { palette; width } minv maxv xlength yle
   plot_image
 
 let plot_heatmap palette state blocksize xdomain ydomain data =
-  let xlength    = Owl.Mat.numel xdomain in
-  let ylength    = Owl.Mat.numel ydomain in
-  let xdata      = Owl.Mat.row_num data in
-  let ydata      = Owl.Mat.col_num data in
+  let xlength    = Dense_float64_vec.length xdomain in
+  let ylength    = Dense_float64_vec.length ydomain in
+  let xdata      = Dense_float64_mat.dim1 data in
+  let ydata      = Dense_float64_mat.dim2 data in
   if xlength <> xdata || ylength <> ydata then
     invalid_arg (Printf.sprintf "invalid heatmap size: |xdomain| = %d, |ydomain| = %d, |data| = %dx%d" xlength ylength xdata ydata)
   else ();
@@ -211,7 +211,12 @@ let plot_internal frame { gradient; blocksize; state; hbar_axis; no_heatbar } =
     (* Compute heatmap *)
     let hmap  = plot_heatmap palette state blocksize xdomain ydomain data in
     (* Apply a frame *)
-    let bbox, hmap  = Frame.add_frame frame (Owl.Mat.to_array xdomain) (Owl.Mat.to_array ydomain) [hmap] in
+    let bbox, hmap =
+      Frame.add_frame
+        frame
+        (Dense_float64_vec.to_array xdomain)
+        (Dense_float64_vec.to_array ydomain)
+        [hmap] in
     if no_heatbar then
       Viewport.apply viewport [hmap]
     else
@@ -232,7 +237,12 @@ let plot ~(options : options list) =
       fc viewport xdomain ydomain mat
     | Fun { xdomain; ydomain; f } ->
       let mat =
-        Owl.Mat.init_2d (Owl.Mat.numel xdomain) (Owl.Mat.numel ydomain)
-          (fun i j -> f (Owl.Mat.get xdomain 0 i) (Owl.Mat.get ydomain 0 j))
+        Dense_float64_mat.init
+          ~lines:(Dense_float64_vec.length xdomain)
+          ~cols:(Dense_float64_vec.length ydomain)
+          ~f:(fun i j ->
+            let x = Dense_float64_vec.get xdomain i in
+            let y = Dense_float64_vec.get ydomain j in
+            f x y)
       in
       fc viewport xdomain ydomain mat

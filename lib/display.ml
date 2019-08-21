@@ -122,7 +122,7 @@ let display_sdl window plot =
   in
   (* 4. Create a Cairo surface to write on the pixels *)
   let cairo_surface =
-    Cairo.Image.create_for_data32 ~width ~height sdl_pixels
+    Cairo.Image.create_for_data32 ~w:width ~h:height sdl_pixels
   in
   (* 5. Create Cairo context from Cairo surface *)
   let ctx = Cairo.create cairo_surface
@@ -176,9 +176,9 @@ let sdl_loop window plot =
 
 let display_pdf filename plot =
   let plot, w, h    = process_plot 1.0 1.0 plot in (* TODO: make margins a parameter *)
-  let width         = mm_to_pt_ratio *. w in
-  let height        = mm_to_pt_ratio *. h in
-  let cairo_surface = Cairo.PDF.create ~fname:filename ~width ~height in
+  let w             = mm_to_pt_ratio *. w in
+  let h             = mm_to_pt_ratio *. h in
+  let cairo_surface = Cairo.PDF.create filename ~w ~h in
   let ctx           = Cairo.create cairo_surface in
   let _ =
     Cairo.set_matrix
@@ -186,7 +186,7 @@ let display_pdf filename plot =
       Cairo.({
           xx = mm_to_pt_ratio ; yx = 0.0 ;
           xy = 0.0 ; yy = ~-. mm_to_pt_ratio;
-          x0 = 0.0 ; y0 = height
+          x0 = 0.0 ; y0 = h
         });
     Cairo.set_line_width ctx 0.2;
     Cairo.select_font_face

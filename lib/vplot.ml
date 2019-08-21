@@ -25,3 +25,9 @@ module Units = Units
 module Cmds = Cmds
 
 module Pt = Vlayout.Pt
+
+module Dense_float64_vec = Dense_float64_vec
+
+module Dense_float64_mat = Dense_float64_mat
+
+module Utils = Utils

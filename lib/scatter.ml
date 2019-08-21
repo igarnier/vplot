@@ -1,5 +1,4 @@
 open Vlayout (* for Pt *)
-open Batteries
 
 type points = Pt.t array
 
@@ -38,18 +37,31 @@ let enum_shape =
     | 4 -> Plus { length }
     | _ -> failwith "impossible case"
   in
-  let r = ref 0.05 in
-  Enum.range 0
-  |> Enum.map (fun i ->
-      let shape = shape_of i !r in
-      r := !r +. 0.02;
-      shape
-    )
+  let r = ref 0.03 in
+  let list =
+    List.init 5 (fun i ->
+        r := !r +. 0.02;
+        shape_of i !r) in
+  let state1 = ref list in
+  let state2 = ref [] in
+  (fun () ->
+    (match !state1 with
+     | [] ->
+        state1 := List.rev !state2 ;
+        state2 := []
+     | _ -> ()) ;
+    match !state1 with
+    | hd :: tl ->
+       let res = hd in
+       state1 := tl ;
+       state2 := hd :: !state2 ;
+       res
+    | _ -> assert false)
 
-let enum_scatter =
-  Enum.cartesian_product Style.enum_colors enum_shape
-  |> Enum.map (fun (color, shape) -> Scatter { shape; color })
-
+let enum_scatter = fun () ->
+  let color = Style.enum_colors () in
+  let shape = enum_shape () in
+  Scatter { shape ; color }
 
 let plot_scatter shape color data =
   let cmds =
@@ -123,12 +135,28 @@ let instantaneous_speeds time data =
         speed_idx time data (i+1)
       )
 
+let array_min (arr : float array) =
+  let res = ref infinity in
+  for i = 0 to Array.length arr - 1 do
+    if arr.(i) < !res then
+      res := arr.(i)
+  done ;
+  !res
+
+let array_max (arr : float array) =
+  let res = ref neg_infinity in
+  for i = 0 to Array.length arr - 1 do
+    if arr.(i) > !res then
+      res := arr.(i)
+  done ;
+  !res
+
 let draw_trajectory_relspeed time data =
   if Array.length time <= 1 then []
   else
     let speeds = instantaneous_speeds time data in
-    let min    = Array.min speeds in
-    let max    = Array.max speeds in
+    let min    = array_min speeds in
+    let max    = array_max speeds in
     let delta  = (max -. min) +. 0.01 (* regularise *) in
     let colors =
       (* if delta < 0.01 then *)

@@ -1,4 +1,3 @@
-open Batteries
 
 type 'a t =
   [ `Node of 'a * 'a t list ]
@@ -109,6 +108,19 @@ let rec plot_tree params lblfunc (tree : 'a id t) =
 
 open Vlayout
 
+(* max of an empty list is neg_infinity *)
+let list_max (l : float list) =
+  let rec loop l res =
+    match l with
+    | [] -> res
+    | hd :: tl ->
+       if hd > res then
+         loop tl hd
+       else
+         loop tl res
+  in
+  loop l neg_infinity
+
 let rec plot_dendrogram params lblfunc (tree : 'a id t) =
   match tree with
   | `Node({ elt; id }, []) ->
@@ -140,7 +152,7 @@ let rec plot_dendrogram params lblfunc (tree : 'a id t) =
     let root  = Cmds.NameMap.find (-id) map in
     let pts   = List.map (function `Node({ id ; _ }, _) ->
         Cmds.NameMap.find id map) subtrees in
-    let max_y = List.max (List.map Pt.y pts) in
+    let max_y = list_max (List.map Pt.y pts) in
     let deltay = Pt.y root -. max_y in
     let splity = max_y +. 0.1 *. deltay in
     let subroot = Pt.pt (Pt.x root) splity in
