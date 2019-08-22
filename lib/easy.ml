@@ -75,7 +75,7 @@ let plot ?name ?(options=[]) domain vecs =
   match name with
   | None ->
     (* SDL plot *)
-    Plot.plot_sdl layout
+    Plot.plot_sdl None layout
   | Some name ->
     (* PDF plot *)
     Plot.plot_pdf name layout
@@ -127,7 +127,7 @@ let scatter ?name ?(options=[]) cloud_list =
   match name with
   | None ->
     (* SDL plot *)
-    Plot.plot_sdl layout
+    Plot.plot_sdl None layout
   | Some name ->
     (* PDF plot *)
     Plot.plot_pdf name layout

@@ -39,7 +39,7 @@ let plot_pdf filename layout =
   let target = Display.init_pdf filename in
   Display.display ~target ~plot:(fun () -> layout)
 
-let plot_sdl layout =
+let plot_sdl dims layout =
   let layout = to_vlayout layout in
-  let target = Display.init_sdl () in
+  let target = Display.init_sdl ~dims in
   Display.display ~target ~plot:(fun () -> layout)

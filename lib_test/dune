@@ -1,5 +1,5 @@
 (executables
- (names plots)
+ (names plots anim)
  (libraries vplot staTz numerics))
 
 (rule
@@ -9,4 +9,9 @@
 (alias
  (name runtest)
  (deps    (:exe plots.exe))
+ (action (run %{exe})))
+
+(alias
+ (name runtest_anim)
+ (deps    (:exe anim.exe))
  (action (run %{exe})))

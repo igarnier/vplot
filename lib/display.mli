@@ -6,7 +6,7 @@ type target
 
 type window
 
-val init_sdl : unit -> target
+val init_sdl : dims:(int * int) option -> target
 
 val init_pdf : string -> target
 
