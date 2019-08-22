@@ -1,5 +1,6 @@
 open Vlayout
 open Bigarray
+open Numerics.Float64
 
 
 type gradient_spec =
@@ -30,11 +31,11 @@ type hmap_options =
 type options = [ hmap_options | Frame.options ]
 
 type data =
-  | Mat of { xdomain : Dense_float64_vec.t
-           ; ydomain : Dense_float64_vec.t
-           ; mat     : Dense_float64_mat.t }
-  | Fun of { xdomain : Dense_float64_vec.t
-           ; ydomain : Dense_float64_vec.t
+  | Mat of { xdomain : Vec.t
+           ; ydomain : Vec.t
+           ; mat     : Mat.t }
+  | Fun of { xdomain : Vec.t
+           ; ydomain : Vec.t
            ; f : float -> float -> float }
 
 type hmap_options_rec =
@@ -118,7 +119,7 @@ let write_data_to_image_noblock { palette; width } minv maxv xlength ylength dat
   let width      = float width in
   for i = 0 to xlength - 1 do
     for j = 0 to ylength - 1 do
-      let f = Dense_float64_mat.get data i j in
+      let f = Mat.get data i j in
       let f = clamp ((f -. minv) *. ilen) in
       let c = int_of_float (width *. f) in
       Image.set plot_image i j palette.{c}
@@ -134,7 +135,7 @@ let write_data_to_image block_x block_y { palette; width } minv maxv xlength yle
   let width      = float width in
   for i = 0 to xlength - 1 do
     for j = 0 to ylength - 1 do
-      let f = Dense_float64_mat.get data i j in
+      let f = Mat.get data i j in
       let f = clamp ((f -. minv) *. ilen) in
       let c = int_of_float (width *. f) in
       let c = palette.{c} in
@@ -152,10 +153,10 @@ let write_data_to_image block_x block_y { palette; width } minv maxv xlength yle
   plot_image
 
 let plot_heatmap palette state blocksize xdomain ydomain data =
-  let xlength    = Dense_float64_vec.length xdomain in
-  let ylength    = Dense_float64_vec.length ydomain in
-  let xdata      = Dense_float64_mat.dim1 data in
-  let ydata      = Dense_float64_mat.dim2 data in
+  let xlength    = Vec.length xdomain in
+  let ylength    = Vec.length ydomain in
+  let xdata      = Mat.dim1 data in
+  let ydata      = Mat.dim2 data in
   if xlength <> xdata || ylength <> ydata then
     invalid_arg (Printf.sprintf "invalid heatmap size: |xdomain| = %d, |ydomain| = %d, |data| = %dx%d" xlength ylength xdata ydata)
   else ();
@@ -214,8 +215,8 @@ let plot_internal frame { gradient; blocksize; state; hbar_axis; no_heatbar } =
     let bbox, hmap =
       Frame.add_frame
         frame
-        (Dense_float64_vec.to_array xdomain)
-        (Dense_float64_vec.to_array ydomain)
+        (Vec.to_array xdomain)
+        (Vec.to_array ydomain)
         [hmap] in
     if no_heatbar then
       Viewport.apply viewport [hmap]
@@ -237,12 +238,12 @@ let plot ~(options : options list) =
       fc viewport xdomain ydomain mat
     | Fun { xdomain; ydomain; f } ->
       let mat =
-        Dense_float64_mat.init
-          ~lines:(Dense_float64_vec.length xdomain)
-          ~cols:(Dense_float64_vec.length ydomain)
+        Mat.init
+          ~lines:(Vec.length xdomain)
+          ~cols:(Vec.length ydomain)
           ~f:(fun i j ->
-            let x = Dense_float64_vec.get xdomain i in
-            let y = Dense_float64_vec.get ydomain j in
+            let x = Vec.get xdomain i in
+            let y = Vec.get ydomain j in
             f x y)
       in
       fc viewport xdomain ydomain mat

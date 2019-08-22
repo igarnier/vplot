@@ -1,6 +1,6 @@
 (executables
  (names plots)
- (libraries vplot staTz))
+ (libraries vplot staTz numerics))
 
 (rule
  (targets plot.pdf)

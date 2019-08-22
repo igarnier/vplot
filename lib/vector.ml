@@ -1,8 +1,9 @@
+open Numerics.Float64
 open Vlayout (* for Pt *)
 
 type vec =
-  | Full of { data : Dense_float64_vec.t; sty : Style.t; lab : string }
-  | Simple of Dense_float64_vec.t
+  | Full of { data : Vec.t; sty : Style.t; lab : string }
+  | Simple of Vec.t
 
 type state = {
   mutable min_value : float;
@@ -22,7 +23,7 @@ type options =
   | Frame.options
   ]
 
-type data = { domain : Dense_float64_vec.t; vecs : vec list }
+type data = { domain : Vec.t; vecs : vec list }
 
 let default_state () =
   {
@@ -64,17 +65,17 @@ let _map_data f =
   | Simple data -> Simple (f data)
 
 let _extract_ticks vec ticks =
-  let len = Dense_float64_vec.length vec in
+  let len = Vec.length vec in
   if ticks < 2
   then invalid_arg "extract_ticks: not enough ticks on axis.";
   if len < ticks
   then invalid_arg "extract_ticks: too many ticks on axis.";
   let stride = len / (ticks - 1) in
-  let acc    = ref [Dense_float64_vec.get vec 0 0] in
+  let acc    = ref [Vec.get vec 0] in
   for i = 1 to ticks - 2 do
-    acc := (Dense_float64_vec.get vec 0 (i * stride)) :: !acc
+    acc := (Vec.get vec (i * stride)) :: !acc
   done;
-  List.rev ((Dense_float64_vec.get vec 0 (len-1)) :: !acc)
+  List.rev ((Vec.get vec (len-1)) :: !acc)
 
 (* Samples should be selected preferentially where the function has a lot
    of curvature, which for a triple of consecutive points corresponds to how
@@ -82,7 +83,7 @@ let _extract_ticks vec ticks =
    (and we assume the x_i are equispaced) then we get rid of y_2
    if (y_1 - y_2) dot (y_3 - y_2) < threshold (TODO: check) *)
 let subsample data =
-  let len = Dense_float64_vec.length data in
+  let len = Vec.length data in
   let rec loop vprev vnow inow vnext acc =
     if inow = (len-2) then (inow + 1) :: inow :: acc
     else
@@ -91,7 +92,7 @@ let subsample data =
       and vprev = vnow
       and vnow  = vnext
       and inow  = inow + 1
-      and vnext = Dense_float64_vec.get data (inow + 2) in
+      and vnext = Vec.get data (inow + 2) in
       if false (*TODO: insert appropriate test against well-chosen bound*) then
         (* Curvature et rid of vnow *)
         loop vprev vnow inow vnext acc
@@ -102,15 +103,15 @@ let subsample data =
   else if len = 1 then [0]
   else if len = 2 then [0;1]
   else
-    let vprev = Dense_float64_vec.get data 0
-    and vnow  = Dense_float64_vec.get data 1
+    let vprev = Vec.get data 0
+    and vnow  = Vec.get data 1
     and inow  = 1
-    and vnext = Dense_float64_vec.get data 2
+    and vnext = Vec.get data 2
     and acc   = []
     in
     loop vprev vnow inow vnext acc
 
-let vectors_enveloppe (data:Dense_float64_vec.t list) min_value max_value =
+let vectors_enveloppe (data:Vec.t list) min_value max_value =
   List.fold_left (fun (min_value, max_value) data ->
       let (minv, maxv) = Utils.vector_range data in
       let min = Utils.min min_value minv
@@ -133,13 +134,13 @@ let draw_curve domain vec =
   | [] | [_] ->
     failwith "draw_curve: sample list too short. Bug found."
   | index :: tl ->
-    let y      = Dense_float64_vec.get vector index in
-    let x      = Dense_float64_vec.get domain index in
+    let y      = Vec.get vector index in
+    let x      = Vec.get domain index in
     let pt     = Pt.pt x y in
     let segments, _ =
       List.fold_left (fun (segments, prevpt) index ->
-          let y   = Dense_float64_vec.get vector index in
-          let x   = Dense_float64_vec.get domain index in
+          let y   = Vec.get vector index in
+          let x   = Vec.get domain index in
           let pt  = Pt.pt x y in
           let seg = Cmds.segment ~p1:prevpt ~p2:pt in
           (seg :: segments, pt)
@@ -150,12 +151,12 @@ let draw_curve domain vec =
 let plot_internal frame { state } viewport domain data =
   begin match data with [] -> invalid_arg "plot_internal: empty data list on input" | _ -> () end;
   let points = List.map get_data data in
-  let datlen = List.map Dense_float64_vec.length points in
+  let datlen = List.map Vec.length points in
   if not (Utils.all_elements_equal datlen) then
     invalid_arg "plot_internal: input vectors must all be of identical length"
   else ();
   let datlen = List.hd datlen in
-  let domlen = Dense_float64_vec.length domain in
+  let domlen = Vec.length domain in
   if domlen <> datlen then
     invalid_arg (Printf.sprintf "plot_internal: size mismatch: |domain| = %d, |data| = %d" domlen datlen)
   else ();
@@ -179,7 +180,7 @@ let plot_internal frame { state } viewport domain data =
   in
   let ydomain = Utils.linspace minv maxv frame.Frame.yaxis.tick_num in
   (* Add frame *)
-  let _, framed = Frame.add_frame frame (Dense_float64_vec.to_array domain) ydomain curves in
+  let _, framed = Frame.add_frame frame (Vec.to_array domain) ydomain curves in
   (* Map to viewport *)
   Viewport.apply viewport [framed]
 

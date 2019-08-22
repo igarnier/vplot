@@ -1,6 +1,7 @@
+
 type vec =
-  | Full of { data: Dense_float64_vec.t; sty: Vlayout.Style.t; lab: string }
-  | Simple of Dense_float64_vec.t
+  | Full of { data: Numerics.Float64.Vec.t; sty: Vlayout.Style.t; lab: string }
+  | Simple of Numerics.Float64.Vec.t
 
 type state = {
   mutable min_value : float;
@@ -15,7 +16,7 @@ type options =
   | Frame.options
   ]
 
-type data = { domain : Dense_float64_vec.t; vecs : vec list }
+type data = { domain : Numerics.Float64.Vec.t; vecs : vec list }
 
 val plot :
   options:options list ->

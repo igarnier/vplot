@@ -1,3 +1,4 @@
+open Numerics.Float64
 
 type float_ref = { mutable x : float }
 
@@ -9,25 +10,25 @@ let max (f : float) (f' : float) =
   if f < f' then f'
   else f
 
-let vector_range (data : Dense_float64_vec.t) =
-  let len   = Dense_float64_vec.length data in
+let vector_range (data : Vec.t) =
+  let len   = Vec.length data in
   let minv  = { x = max_float } in
   let maxv  = { x = (-. max_float) } in
   for i = 0 to len -1 do
-    let v = Dense_float64_vec.get data i in
+    let v = Vec.get data i in
     minv.x <- min minv.x v;
     maxv.x <- max maxv.x v
   done;
   (minv.x, maxv.x)
 
-let data_range (data : Dense_float64_mat.t) =
-  let xdata = Dense_float64_mat.dim1 data in
-  let ydata = Dense_float64_mat.dim2 data in
+let data_range (data : Mat.t) =
+  let xdata = Mat.dim1 data in
+  let ydata = Mat.dim2 data in
   let minv  = { x = max_float } in
   let maxv  = { x = (-. max_float) } in
   for i = 0 to xdata -1 do
     for j = 0 to ydata -1 do
-      let v = Dense_float64_mat.get data i j in
+      let v = Mat.get data i j in
       minv.x <- min minv.x v;
       maxv.x <- max maxv.x v
     done

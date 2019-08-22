@@ -1,4 +1,5 @@
 open Vplot
+open Numerics.Float64
 
 module Pt = Vlayout.Pt
 
@@ -32,9 +33,9 @@ let _ = Plot.plot_pdf "diagonal.pdf" plot
 
 (* Test heatmap plot *)
 
-let xdomain = Dense_float64_vec.of_array (Utils.linspace 0.0 (2. *. pi) 300)
+let xdomain = Vec.of_array (Utils.linspace 0.0 (2. *. pi) 300)
 
-let ydomain = Dense_float64_vec.of_array (Utils.linspace 0.0 (2. *. pi) 300)
+let ydomain = Vec.of_array (Utils.linspace 0.0 (2. *. pi) 300)
 
 let f x y = (cos x) *. (cos y)
 
@@ -56,9 +57,9 @@ let viewport =
 
 
 let array  = Utils.linspace 0.0 (3. *. pi) 150
-let domain = Dense_float64_vec.of_array array
-let vec1 = Dense_float64_vec.of_array (Array.map cos array)
-let vec2 = Dense_float64_vec.of_array (Array.map sin array)
+let domain = Vec.of_array array
+let vec1 = Vec.of_array (Array.map cos array)
+let vec2 = Vec.of_array (Array.map sin array)
 
 let vector =
   Plot.Plot { vp   = viewport;
@@ -78,25 +79,23 @@ let viewport =
   Viewport.AutoY { xsize = Units.mm 150.0 }
 
 let mean0 =
-  Dense_float64_vec.of_array [| 1.0; ~-. 0.5 |]
+  Vec.of_array [| 1.0; ~-. 0.5 |]
 
 let mean1 =
-  Dense_float64_vec.of_array [| 2.5;  2.0 |]
+  Vec.of_array [| 2.5;  2.0 |]
 
 let mean2 =
-  Dense_float64_vec.of_array [| ~-. 1.5;  0.0 |]
+  Vec.of_array [| ~-. 1.5;  0.0 |]
 
 let vec2pt vec =
-  Vlayout.Pt.pt (Dense_float64_vec.get vec 0) (Dense_float64_vec.get vec 1)
+  Vlayout.Pt.pt (Vec.get vec 0) (Vec.get vec 1)
 
 let gaussian_2 =
   let gaussian = StaTz.Stats.gaussian ~mean:0.0 ~std:1.0 in
   fun () ->
   let x = StaTz.Stats.sample_gen gaussian in
   let y = StaTz.Stats.sample_gen gaussian in
-  Dense_float64_vec.of_array [| x ; y |]
-
-open StaTz.Dense.Float64
+  Vec.of_array [| x ; y |]
 
 let dataset0 =
   let open Scatter in

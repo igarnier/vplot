@@ -1,3 +1,5 @@
+open Numerics.Float64
+
 type gradient_spec =
   { gradient_path : Gradient.path; gradient_steps : int }
 
@@ -17,11 +19,11 @@ type hmap_options =
 type options = [ hmap_options | Frame.options ]
 
 type data =
-  | Mat of { xdomain : Dense_float64_vec.t
-           ; ydomain : Dense_float64_vec.t
-           ; mat     : Dense_float64_mat.t }
-  | Fun of { xdomain : Dense_float64_vec.t
-           ; ydomain : Dense_float64_vec.t
+  | Mat of { xdomain : Vec.t
+           ; ydomain : Vec.t
+           ; mat     : Mat.t }
+  | Fun of { xdomain : Vec.t
+           ; ydomain : Vec.t
            ; f : float -> float -> float }
 
 val default_state : unit -> state
