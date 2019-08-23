@@ -8,6 +8,12 @@ module Scatter = Scatter
 
 module Trees = Trees
 
+module Graph_sig = Graph_sig
+
+module Graph = Graph
+
+module Camera = Camera
+
 module Easy = Easy
 
 module Frame = Frame

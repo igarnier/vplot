@@ -1,8 +1,9 @@
 (** The kind of plots that can be performed. *)
 type plot =
-  | Heatmap of { data : Heatmap.data; options : Heatmap.options list }
-  | Vector  of { data : Vector.data;  options : Vector.options list }
-  | Scatter of { data : Scatter.data; options : Scatter.options list }
+  | Heatmap : { data : Heatmap.data; options : Heatmap.options list } -> plot
+  | Vector  : { data : Vector.data;  options : Vector.options list } -> plot
+  | Scatter : { data : Scatter.data; options : Scatter.options list } -> plot
+  | Graph : { data : ('v, 'e) Graph.data; options : ('v, 'e) Graph.options list } -> plot
 
 (** A layout is a bunch of plots organized hierarchically in [plotbox]es. *)
 type layout =

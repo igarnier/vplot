@@ -23,10 +23,10 @@ let ds =
 let plot =
   Plot.Plot { vp = viewport;
               plot = Scatter
-                {
-                  data = [ds];
-                  options = []
-                }
+                  {
+                    data = [ds];
+                    options = []
+                  }
             }
 
 let _ = Plot.plot_pdf "diagonal.pdf" plot
@@ -93,9 +93,9 @@ let vec2pt vec =
 let gaussian_2 =
   let gaussian = StaTz.Stats.gaussian ~mean:0.0 ~std:1.0 in
   fun () ->
-  let x = StaTz.Stats.sample_gen gaussian in
-  let y = StaTz.Stats.sample_gen gaussian in
-  Vec.of_array [| x ; y |]
+    let x = StaTz.Stats.sample_gen gaussian in
+    let y = StaTz.Stats.sample_gen gaussian in
+    Vec.of_array [| x ; y |]
 
 let dataset0 =
   let open Scatter in
@@ -157,3 +157,27 @@ let all_together =
   ]
 
 let _ = Plot.plot_pdf "all.pdf" all_together
+
+(* Try plotting to SDL *)
+
+let viewport =
+  Viewport.FixedSize { xsize = Units.mm 150.0; ysize = Units.mm 100.0 }
+
+let cmd =
+  Cmds.segment ~p1:(Pt.pt 0.0 0.0) ~p2:(Pt.pt 150.0 100.0)
+
+let ds =
+  let open Scatter in
+  { data = [| |] ;
+    plot_type = Decoration [cmd]
+  }
+
+let plot =
+  Plot.Plot { vp = viewport;
+              plot =
+                Scatter {
+                  data = [ds];
+                  options = []
+                } }
+
+let _ = Plot.plot_sdl (Some (800, 800)) plot

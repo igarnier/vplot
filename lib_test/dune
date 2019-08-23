@@ -1,6 +1,6 @@
 (executables
  (names plots anim)
- (libraries vplot staTz numerics))
+ (libraries vplot staTz numerics ocamlgraph))
 
 (rule
  (targets plot.pdf)
