@@ -1,19 +1,12 @@
 open Vlayout
 
 (* Instantiate the Vlayout.Commands functor *)
-module Name =
-struct
+module Name = struct
   type t = int
 
-  let compare (x : int) (y : int) =
-    if x > y then 1
-    else if x = y then 0
-    else -1
+  let compare (x : int) (y : int) = if x > y then 1 else if x = y then 0 else -1
 
-  let print = string_of_int
-
+  let pp = Format.pp_print_int
 end
 
-module Cmds = Commands.Make(Name)
-
-include Cmds
+include Commands.Make (Name)
