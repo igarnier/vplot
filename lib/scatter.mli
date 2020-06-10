@@ -1,16 +1,16 @@
 type points = Vlayout.Pt.t array
 
 type shape =
-  | Dot    of { radius : float }
+  | Dot of { radius : float }
   | Circle of { radius : float }
   | Square of { length : float }
-  | Cross  of { length : float }
-  | Plus   of { length : float }
-  | Stuff  of Cmds.t list
+  | Cross of { length : float }
+  | Plus of { length : float }
+  | Stuff of Cmds.t list
 
 type plot_type =
-  | Scatter    of { shape : shape; color : Vlayout.Style.color }
-  | Traj       of traj
+  | Scatter of { shape : shape; color : Vlayout.Color.t }
+  | Traj of traj
   | Decoration of Cmds.t list
 
 and traj =
@@ -20,11 +20,11 @@ and traj =
 type options = Frame.options
 
 type datum = { data : points; plot_type : plot_type }
-type data  = datum list
 
-val enum_shape   : unit -> shape
+type data = datum list
+
+val enum_shape : unit -> shape
+
 val enum_scatter : unit -> plot_type
 
-val plot :
-  options:options list ->
-  viewport:Viewport.t -> data:data -> Cmds.t
+val plot : options:options list -> viewport:Viewport.t -> data:data -> Cmds.t

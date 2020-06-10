@@ -1,4 +1,4 @@
-type path = (Vlayout.Style.color * float) list
+type path = (Vlayout.Color.t * float) list
 
 type t = { rarr : float array; garr : float array; barr : float array }
 
@@ -45,13 +45,15 @@ let interpolate total_len ((v1, ofs1), (v2, ofs2)) =
   arr
 
 let split_slices_by_colors slices =
-  let open Vlayout.Style in
+  let open Vlayout.Color in
   let mapclr proj slices =
     List.map
       (fun ((c1, ofs1), (c2, ofs2)) -> ((proj c1, ofs1), (proj c2, ofs2)))
       slices
   in
-  (mapclr r slices, mapclr g slices, mapclr b slices)
+  ( mapclr (fun { r; _ } -> r) slices,
+    mapclr (fun { g; _ } -> g) slices,
+    mapclr (fun { b; _ } -> b) slices )
 
 let last_stop l =
   let (clr, _) = List.hd (List.rev l) in
@@ -66,7 +68,7 @@ let create path total_len =
     let gslices = List.map (interpolate total_len) gslices in
     let bslices = List.map (interpolate total_len) bslices in
     let lastclr = last_stop path in
-    let rarr = Array.(append (concat rslices) [| lastclr.Vlayout.Style.r |]) in
-    let garr = Array.(append (concat gslices) [| lastclr.Vlayout.Style.g |]) in
-    let barr = Array.(append (concat bslices) [| lastclr.Vlayout.Style.b |]) in
+    let rarr = Array.(append (concat rslices) [| lastclr.Vlayout.Color.r |]) in
+    let garr = Array.(append (concat gslices) [| lastclr.Vlayout.Color.g |]) in
+    let barr = Array.(append (concat bslices) [| lastclr.Vlayout.Color.b |]) in
     { rarr; garr; barr }

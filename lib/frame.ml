@@ -25,7 +25,7 @@ type caption = { caption_pos : caption_pos; caption : string }
 
 type t =
   { plot_type : plot_type;
-    color : Style.color;
+    color : Color.t;
     text_size : Units.pt;
     caption : caption option;
     xaxis : axis;
@@ -35,7 +35,7 @@ type t =
 
 type options =
   [ `Plot_type of plot_type
-  | `Color of Style.color
+  | `Color of Color.t
   | `Text_size of Units.pt
   | `Caption_pos of caption_pos
   | `Caption of string
@@ -102,8 +102,8 @@ let default =
   let xaxis = default_xaxis in
   let yaxis = default_yaxis in
   { plot_type = LinLin;
-    color = Style.black;
-    (* bg             : Style.color; *)
+    color = Color.black;
+    (* bg             : Color.t; *)
     text_size = Units.pt 5.;
     caption = None;
     xaxis;
@@ -136,7 +136,7 @@ let ticked_horizontal_axis (side : [ `Up | `Down ]) origin width xaxis text_size
           | `Up ->
               let lpos = if Pt.y p2 < Pt.y p1 then p1 else p2 in
               let lpos =
-                Pt.plus
+                Pt.add
                   lpos
                   (Pt.pt 0.0 (abs_float (xaxis.label_to_tick :> float)))
               in
@@ -144,14 +144,14 @@ let ticked_horizontal_axis (side : [ `Up | `Down ]) origin width xaxis text_size
           | `Down ->
               let lpos = if Pt.y p2 > Pt.y p1 then p1 else p2 in
               let lpos =
-                Pt.plus
+                Pt.add
                   lpos
                   (Pt.pt 0.0 ~-.(abs_float (xaxis.label_to_tick :> float)))
               in
               { Cmds.pos = lpos; relpos = North }
         in
         (* add a bit of space between the label and its anchor *)
-        (* let lpos = Pt.plus lpos (Pt.pt 0.0 (~-. (abs_float (xaxis.label_to_tick :> float)))) in *)
+        (* let lpos = Pt.add lpos (Pt.pt 0.0 (~-. (abs_float (xaxis.label_to_tick :> float)))) in *)
         (* let pos  = { Cmds.pos = lpos; relpos = North } in *)
         let str = float_to_string xlab in
         let labl = text pos text_size str in
@@ -182,7 +182,7 @@ let ticked_vertical_axis (side : [ `Left | `Right ]) origin height yaxis
           | `Left ->
               let lpos = if Pt.x p2 > Pt.x p1 then p1 else p2 in
               let lpos =
-                Pt.plus
+                Pt.add
                   lpos
                   (Pt.pt ~-.(abs_float (yaxis.label_to_tick :> float)) 0.0)
               in
@@ -190,13 +190,13 @@ let ticked_vertical_axis (side : [ `Left | `Right ]) origin height yaxis
           | `Right ->
               let lpos = if Pt.x p2 < Pt.x p1 then p1 else p2 in
               let lpos =
-                Pt.plus
+                Pt.add
                   lpos
                   (Pt.pt (abs_float (yaxis.label_to_tick :> float)) 0.0)
               in
               { Cmds.pos = lpos; relpos = West }
         in
-        (* let lpos = Pt.plus lpos (Pt.pt (~-. (abs_float (yaxis.label_to_tick :> float))) 0.0) in *)
+        (* let lpos = Pt.add lpos (Pt.pt (~-. (abs_float (yaxis.label_to_tick :> float))) 0.0) in *)
         (* let pos  = { Cmds.pos = lpos; relpos = East } in *)
         let str = float_to_string ylab in
         let labl = text pos text_size str in
@@ -215,7 +215,7 @@ let subsample_values values n =
     let indices = List.map int_of_float indices in
     List.map (fun i -> values.(i)) indices
 
-let apply_frame_color frame_color commands =
+let apply_frame_color frame_color cmd =
   Cmds.style
     ~style:
       Style.(
@@ -224,17 +224,17 @@ let apply_frame_color frame_color commands =
           ~width:None
           ~dash:None
           ~fill:None)
-    ~subcommands:commands
+    cmd
 
 let add_frame frm xvalues yvalues plot =
   (* compute bbox and extents of [plot] *)
-  let bbox = Cmds.Bbox.of_commands plot in
+  let bbox = Cmds.Bbox.of_command plot in
   let w = Cmds.Bbox.width bbox in
   let h = Cmds.Bbox.height bbox in
   (* Resize [plot] and [bbox] to natural frame *)
   let xscale = (natural_x :> float) /. (w :> float) in
   let yscale = (natural_y :> float) /. (h :> float) in
-  let plot = Cmds.scale ~xs:xscale ~ys:yscale ~subcommands:plot in
+  let plot = Cmds.scale ~xs:xscale ~ys:yscale plot in
   let bbox = Cmds.Bbox.scale xscale yscale bbox in
   let origin = Cmds.Bbox.sw bbox in
   let xlbls = subsample_values xvalues frm.xaxis.tick_num in
@@ -284,14 +284,12 @@ let add_frame frm xvalues yvalues plot =
           ~size:(frm.text_size :> float)
           ~text:frm.yaxis.axis_label
       in
-      let rtext = Cmds.rotate ~radians:halfpi ~subcommands:[text] in
+      let rtext = Cmds.rotate ~radians:halfpi text in
       let ylblp =
         Pt.(
           pt (Units.mm ~-.5.0 :> float) 0.0 + Cmds.Bbox.(w (of_commands yaxis)))
       in
-      let ylbl =
-        Cmds.place ~pos:Cmds.{ pos = ylblp; relpos = East } ~subcommands:[rtext]
-      in
+      let ylbl = Cmds.place ~pos:Cmds.{ pos = ylblp; relpos = East } rtext in
       ylbl :: yaxis
   in
   let commands = xaxis @ yaxis @ [plot] @ frm.decorations in
@@ -305,18 +303,18 @@ let add_frame frm xvalues yvalues plot =
           match caption_pos with
           | `Above ->
               let p = Cmds.Bbox.n bbox in
-              let p = Pt.plus p (Pt.pt 0.0 gap) in
+              let p = Pt.add p (Pt.pt 0.0 gap) in
               { Cmds.pos = p; relpos = South }
           | `Below ->
               let p = Cmds.Bbox.s bbox in
-              let p = Pt.plus p (Pt.pt 0.0 ~-.gap) in
+              let p = Pt.add p (Pt.pt 0.0 ~-.gap) in
               { Cmds.pos = p; relpos = North }
         in
         let size = Units.pt (1.5 *. (frm.text_size :> float)) in
         let lbl = Cmds.text ~pos ~size:(size :> float) ~text:caption in
         lbl :: (xaxis @ yaxis @ [plot])
   in
-  (bbox, apply_frame_color frm.color commands)
+  (bbox, apply_frame_color frm.color (Cmds.wrap commands))
 
 let add_frame_with_options options xvalues yvalues plot =
   let frm = set_options default options in

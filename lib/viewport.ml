@@ -4,7 +4,7 @@ type t =
   | FixedSize of { xsize : Units.mm; ysize : Units.mm }
 
 let apply vp plot =
-  let bbox = Cmds.Bbox.of_commands plot in
+  let bbox = Cmds.Bbox.of_command plot in
   (* enlarge bbox slightly *)
   let bbox = Cmds.Bbox.enlarge 1.1 1.1 bbox in
   (* put a frame around the box *)
@@ -12,10 +12,14 @@ let apply vp plot =
     let box = Cmds.box ~mins:(Cmds.Bbox.sw bbox) ~maxs:(Cmds.Bbox.ne bbox) in
     let sty =
       let open Vlayout.Style in
-      make ~stroke:(solid_stroke ~clr:black) ~width:None ~dash:None ~fill:None
+      make
+        ~stroke:(solid_stroke ~clr:Vlayout.Color.black)
+        ~width:None
+        ~dash:None
+        ~fill:None
     in
-    let box = Cmds.style ~style:sty ~subcommands:[box] in
-    box :: plot
+    let box = Cmds.style ~style:sty box in
+    Cmds.wrap [box; plot]
   in
   let w = Cmds.Bbox.width bbox in
   let h = Cmds.Bbox.height bbox in
@@ -36,14 +40,16 @@ let apply vp plot =
         let xs = ys /. ar in
         (xs, ys)
   in
-  let cmds =
-    Cmds.translate
-      ~v:(Vlayout.Pt.scale (Cmds.Bbox.sw bbox) ~-.1.0)
-      ~subcommands:plot
+  let cmd =
+    Cmds.translate ~v:(Vlayout.Pt.scale (Cmds.Bbox.sw bbox) ~-.1.0) plot
   in
-  let cmds = Cmds.scale ~xs ~ys ~subcommands:[cmds] in
+  let cmds = Cmds.scale ~xs ~ys cmd in
   Cmds.style
     ~style:
       Vlayout.Style.(
-        make ~stroke:(solid_stroke ~clr:black) ~width:None ~dash:None ~fill:None)
-    ~subcommands:[cmds]
+        make
+          ~stroke:(solid_stroke ~clr:Vlayout.Color.black)
+          ~width:None
+          ~dash:None
+          ~fill:None)
+    cmds

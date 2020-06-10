@@ -1,7 +1,7 @@
 open Gg
 open Vlayout
 
-type color = Style.color
+type color = Color.t
 
 type style = Circle of float * color | Square of float * color
 
@@ -14,7 +14,7 @@ type (_, _) data =
       { impl : ('t, 'v, 'e) Graph_sig.impl; graph : 't; screen : screen }
       -> ('v, 'e) data
 
-type 'v draw_vertex = 'v -> Pt.t -> Cmds.t list -> Cmds.t list
+type 'v draw_vertex = 'v -> Pt.t -> float -> Cmds.t list -> Cmds.t list
 
 type 'e draw_edge = 'e -> Pt.t -> Pt.t -> Cmds.t list -> Cmds.t list
 
@@ -37,7 +37,8 @@ type ('v, 'e) graph_options =
     draw_edge : 'e draw_edge
   }
 
-let default_draw_vertex _ p acc = Cmds.circle ~center:p ~radius:10.0 :: acc
+let default_draw_vertex _ p scale acc =
+  Cmds.circle ~center:p ~radius:scale :: acc
 
 let default_draw_edge _ p1 p2 acc = Cmds.segment ~p1 ~p2 :: acc
 
@@ -105,7 +106,7 @@ module Make (SM : Spring_model.S) = struct
       Array.fold_left
         (fun acc i ->
           let (vtx, (pos, _)) = nodes.(nodes_index.(i)) in
-          draw_vertex vtx (prj pos) acc)
+          draw_vertex vtx (prj pos) (V4.w pos) acc)
         []
         nodes_index
     in
@@ -167,7 +168,7 @@ module Make (SM : Spring_model.S) = struct
         ~draw_vertex:options.draw_vertex
         ~draw_edge:options.draw_edge
     in
-    Cmds.wrap ~subcommands:result
+    Cmds.wrap result
 
   let plot_anim :
       type t e.
@@ -199,5 +200,5 @@ module Make (SM : Spring_model.S) = struct
           ~draw_vertex:options.draw_vertex
           ~draw_edge:options.draw_edge
       in
-      Cmds.wrap ~subcommands:result
+      Cmds.wrap result
 end

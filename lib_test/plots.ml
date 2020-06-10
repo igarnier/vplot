@@ -1,6 +1,7 @@
 open Vplot
 open Numerics.Float64
 module Pt = Vlayout.Pt
+module Color = Vlayout.Color
 
 let pi = acos ~-.1.
 
@@ -70,7 +71,7 @@ let vector =
                         sty =
                           Vlayout.Style.(
                             make
-                              ~stroke:(solid_stroke ~clr:green)
+                              ~stroke:(solid_stroke ~clr:Color.green)
                               ~width:None
                               ~dash:(Some dot_dash)
                               ~fill:None);
@@ -106,19 +107,19 @@ let dataset0 =
   let open Scatter in
   { data = Array.init 60 (fun _ -> vec2pt (Vec.add mean0 (gaussian_2 ())));
     plot_type =
-      Scatter { shape = Circle { radius = 0.05 }; color = Style.black }
+      Scatter { shape = Circle { radius = 0.05 }; color = Color.black }
   }
 
 let dataset1 =
   let open Scatter in
   { data = Array.init 60 (fun _ -> vec2pt (Vec.add mean1 (gaussian_2 ())));
-    plot_type = Scatter { shape = Square { length = 0.05 }; color = Style.red }
+    plot_type = Scatter { shape = Square { length = 0.05 }; color = Color.red }
   }
 
 let dataset2 =
   let open Scatter in
   { data = Array.init 60 (fun _ -> vec2pt (Vec.add mean2 (gaussian_2 ())));
-    plot_type = Scatter { shape = Cross { length = 0.05 }; color = Style.green }
+    plot_type = Scatter { shape = Cross { length = 0.05 }; color = Color.green }
   }
 
 let scatter =
@@ -176,4 +177,8 @@ let ds =
 let plot =
   Plot.Plot { vp = viewport; plot = Scatter { data = [ds]; options = [] } }
 
-let _ = Plot.plot_sdl (Some (800, 800)) 100.0 Window.Rescale plot
+let _ =
+  let spec =
+    Window.(Resolution_and_dpi { xres = 1024; yres = 1024; dpi = 100. })
+  in
+  Plot.plot_sdl ~spec ~mode:Window.Scale_to_window plot

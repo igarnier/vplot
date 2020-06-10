@@ -16,4 +16,4 @@ type layout =
 
 val plot_pdf : string -> layout -> unit
 
-val plot_sdl : (int * int) option -> float -> Window.mode -> layout -> unit
+val plot_sdl : spec:Window.spec -> mode:Window.drawing_mode -> layout -> unit

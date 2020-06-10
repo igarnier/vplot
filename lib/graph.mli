@@ -1,6 +1,6 @@
 open Vlayout
 
-type style = Circle of float * Style.color | Square of float * Style.color
+type style = Circle of float * Color.t | Square of float * Color.t
 
 type initial_distribution = Sphere of float
 
@@ -11,7 +11,7 @@ type (_, _) data =
       { impl : ('t, 'v, 'e) Graph_sig.impl; graph : 't; screen : screen }
       -> ('v, 'e) data
 
-type 'v draw_vertex = 'v -> Pt.t -> Cmds.t list -> Cmds.t list
+type 'v draw_vertex = 'v -> Pt.t -> float -> Cmds.t list -> Cmds.t list
 
 type 'e draw_edge = 'e -> Pt.t -> Pt.t -> Cmds.t list -> Cmds.t list
 
@@ -30,7 +30,8 @@ module Make (SM : Spring_model.S) : sig
     obj_rot:Gg.m3 ->
     camera:Camera.t ->
     model:'e SM.t ->
-    draw_vertex:(SM.Table.key -> Vlayout.Pt.t -> Cmds.t list -> Cmds.t list) ->
+    draw_vertex:
+      (SM.Table.key -> Vlayout.Pt.t -> float -> Cmds.t list -> Cmds.t list) ->
     draw_edge:('e -> Vlayout.Pt.t -> Vlayout.Pt.t -> Cmds.t list -> Cmds.t list) ->
     Cmds.t list
 

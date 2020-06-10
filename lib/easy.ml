@@ -1,11 +1,11 @@
 let colors =
-  [ Vlayout.Style.red;
-    Vlayout.Style.green;
-    Vlayout.Style.blue;
-    Vlayout.Style.gray 0.5;
-    Vlayout.Style.black;
-    Vlayout.Style.pink;
-    Vlayout.Style.cyan ]
+  [ Vlayout.Color.red;
+    Vlayout.Color.green;
+    Vlayout.Color.blue;
+    Vlayout.Color.gray 0.5;
+    Vlayout.Color.black;
+    Vlayout.Color.pink;
+    Vlayout.Color.cyan ]
 
 let solid_styles =
   [ Vlayout.Style.Solid.red;
@@ -68,7 +68,14 @@ let plot ?name ?(options = []) domain vecs =
   match name with
   | None ->
       (* SDL plot *)
-      Plot.plot_sdl None 100. Window.Preserve_aspect layout
+      let spec =
+        Window.(
+          Size_and_dpi
+            { size = { width = Units.mm 1024.; height = Units.mm 1024. };
+              dpi = 100.
+            })
+      in
+      Plot.plot_sdl ~spec ~mode:Window.Preserve_aspect layout
   | Some name ->
       (* PDF plot *)
       Plot.plot_pdf name layout
@@ -118,7 +125,14 @@ let scatter ?name ?(options = []) cloud_list =
   match name with
   | None ->
       (* SDL plot *)
-      Plot.plot_sdl None 100. Window.Preserve_aspect layout
+      let spec =
+        Window.(
+          Size_and_dpi
+            { size = { width = Units.mm 1024.; height = Units.mm 1024. };
+              dpi = 100.
+            })
+      in
+      Plot.plot_sdl ~spec ~mode:Window.Preserve_aspect layout
   | Some name ->
       (* PDF plot *)
       Plot.plot_pdf name layout

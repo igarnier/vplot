@@ -38,8 +38,8 @@ let rec to_vlayout layout =
                 in
                 Graph_plotter.plot impl ~options ~camera ~graph )
       in
-      Cmds.cmd [cmd]
-  | Cmd cmds -> Cmds.cmd cmds
+      Cmds.cmd cmd
+  | Cmd cmds -> Cmds.cmd (Cmds.wrap cmds)
   | Hbox layout_list ->
       let layout_list = List.map to_vlayout layout_list in
       Cmds.hbox ~deltax:5.0 layout_list
@@ -52,7 +52,7 @@ let plot_pdf filename layout =
   let target = Display.init_pdf filename in
   Display.display ~target ~plot:(fun () -> layout)
 
-let plot_sdl dims dpi mode layout =
+let plot_sdl ~spec ~mode layout =
   let layout = to_vlayout layout in
-  let target = Display.init_sdl ~dims ~dpi ~mode in
+  let target = Display.init_sdl ~spec ~mode in
   Display.display ~target ~plot:(fun () -> layout)

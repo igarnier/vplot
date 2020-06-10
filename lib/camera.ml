@@ -4,7 +4,12 @@ open Gg
    its "eye-to-screen" distance, which specifies indirectly the fov
    (a small eye-to-screen entails a wide camera angle). *)
 type t =
-  { pos : P3.t; rot : M3.t; invrot : M3.t; eyedist : float; zoom : float }
+  { mutable pos : P3.t;
+    mutable rot : M3.t;
+    mutable invrot : M3.t;
+    mutable eyedist : float;
+    mutable zoom : float
+  }
 
 let init ~position ~eyedist ~zoom ~radians ~axis =
   assert (eyedist > 0.0) ;
@@ -31,9 +36,23 @@ let camera_to_world ~xres ~yres camera (p : P2.t) (z : float) =
 
 let pos { pos; _ } = pos
 
+let set_pos camera pos = camera.pos <- pos
+
 let rot { rot; _ } = rot
 
+let set_rot camera rot =
+  camera.rot <- rot ;
+  camera.invrot <- M3.inv rot
+
+let invrot { invrot; _ } = invrot
+
 let eyedist { eyedist; _ } = eyedist
+
+let set_eyedist camera f = camera.eyedist <- f
+
+let zoom { zoom; _ } = zoom
+
+let set_zoom camera f = camera.zoom <- f
 
 (* Project a point to the screen *)
 let project camera (p : P3.t) : V4.t =

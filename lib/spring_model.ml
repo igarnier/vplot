@@ -35,6 +35,8 @@ module type S = sig
 
   val create : relax_length:float -> stiffness:float -> 'e t
 
+  val recenter : P3.t -> 'e t -> unit
+
   val mem_edge : 'e t -> vertex -> vertex -> bool
 
   val add_vertex : 'e t -> vertex -> V3.t option -> unit
@@ -46,6 +48,9 @@ module type S = sig
   val remove_edge : 'e t -> vertex -> vertex -> unit
 
   val make_integrator : steps:int option -> model:'e t -> unit -> unit
+
+  val perform_relaxation_step :
+    'a t -> drag_factor:float -> delta_t:float -> unit
 
   val relax : steps:int option -> model:'e t -> unit
 end
@@ -80,6 +85,19 @@ module Make (V : Vertex_sig) : S with type vertex = V.t = struct
     }
 
   let pi = acos ~-.1.
+
+  let recenter pos { state; _ } =
+    let bbox =
+      Table.fold
+        (fun _ { position; _ } bbox -> Box3.add_pt bbox position)
+        state
+        Box3.empty
+    in
+    let mid = Box3.mid bbox in
+    let delta = V3.sub pos mid in
+    Table.iter
+      (fun _ state -> state.position <- V3.add state.position delta)
+      state
 
   let spherical_configuration radius =
     let theta0 = Random.float (2.0 *. pi) in

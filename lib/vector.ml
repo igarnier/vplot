@@ -99,7 +99,11 @@ let draw_curve domain vec =
     | Simple data ->
         let open Vlayout.Style in
         let sty =
-          make ~stroke:(solid_stroke ~clr:red) ~width:None ~dash:None ~fill:None
+          make
+            ~stroke:(solid_stroke ~clr:Vlayout.Color.red)
+            ~width:None
+            ~dash:None
+            ~fill:None
         in
         (data, sty)
   in
@@ -122,7 +126,8 @@ let draw_curve domain vec =
           ([], pt)
           tl
       in
-      Cmds.[style ~style:sty ~subcommands:segments]
+      let segments = Cmds.wrap segments in
+      Cmds.(style ~style:sty segments)
 
 let plot_internal frame { state } viewport domain data =
   ( match data with
@@ -157,14 +162,14 @@ let plot_internal frame { state } viewport domain data =
     else (minv, maxv)
   in
   (* Compute plot *)
-  let curves = List.map (draw_curve domain) data |> List.flatten in
+  let curves = List.map (draw_curve domain) data |> Cmds.wrap in
   let ydomain = Utils.linspace minv maxv frame.Frame.yaxis.tick_num in
   (* Add frame *)
   let (_, framed) =
     Frame.add_frame frame (Vec.to_array domain) ydomain curves
   in
   (* Map to viewport *)
-  Viewport.apply viewport [framed]
+  Viewport.apply viewport framed
 
 let plot ~options ~viewport ~data =
   let { domain; vecs } = data in

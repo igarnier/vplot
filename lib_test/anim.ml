@@ -32,17 +32,20 @@ let g =
 let viewport =
   Viewport.FixedSize { xsize = Units.mm 150.0; ysize = Units.mm 150.0 }
 
-let custom_vertex _v pos acc =
+module Color = Vlayout.Color
+
+let custom_vertex _v pos scale acc =
   let cmd =
     Cmds.style
       ~style:
         Style.(
           make
-            ~stroke:(solid_stroke ~clr:black)
+            ~stroke:(solid_stroke ~clr:Color.black)
             ~width:(Some 0.1)
             ~dash:None
-            ~fill:(Some (simple_vertical_gradient ~clr1:red ~clr2:blue)))
-      ~subcommands:[Cmds.circle ~center:pos ~radius:1.0]
+            ~fill:
+              (Some (simple_vertical_gradient ~clr1:Color.red ~clr2:Color.blue)))
+      (Cmds.circle ~center:pos ~radius:scale)
   in
   cmd :: acc
 
@@ -52,21 +55,24 @@ let options =
     `Global_position (Gg.P3.v 0.0 0.0 ~-.10.0) ]
 
 let () =
-  let dims = Some (1024, 1024) in
   let (module G) = impl in
   let module SM = Spring_model.Make (G.V) in
   let module Graph_plotter = Graph_display.Make (SM) in
+  let campos = P3.v 0.0 0.0 512. in
   let camera =
     Camera.init
-      ~position:P3.(v 0.0 0.0 0.0)
-      ~eyedist:100.0
-      ~radians:(acos ~-.1.0)
+      ~position:campos
+      ~eyedist:1000.0
+      ~radians:0.0
       ~zoom:1.
       ~axis:V3.ox
   in
   let plot =
     let integrator = Graph_plotter.plot_anim impl ~options ~camera ~graph:g in
-    fun () -> Cmds.cmd [integrator ()]
+    fun () -> Cmds.cmd (integrator ())
   in
-  let target = Display.init_sdl ~dims ~dpi:100. ~mode:Window.Rescale in
+  let spec =
+    Window.(Resolution_and_dpi { xres = 1024; yres = 1024; dpi = 100. })
+  in
+  let target = Display.init_sdl ~spec ~mode:Window.Scale_to_window in
   Display.display ~target ~plot

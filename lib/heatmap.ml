@@ -38,14 +38,14 @@ let default_blocksize = (1, 1)
 
 let default_gradient =
   let gradient_path =
-    [(Style.black, 0.0); (Style.gray 0.5, 0.5); (Style.red, 1.0)]
+    [(Color.black, 0.0); (Color.gray 0.5, 0.5); (Color.red, 1.0)]
   in
   let gradient_steps = 50 in
   { gradient_path; gradient_steps }
 
 let white_gradient =
   let gradient_path =
-    [(Style.white, 0.0); (* (Style.gray 0.5, 0.5); *) (Style.red, 1.0)]
+    [(Color.white, 0.0); (* (Color.gray 0.5, 0.5); *) (Color.red, 1.0)]
   in
   let gradient_steps = 50 in
   { gradient_path; gradient_steps }
@@ -170,12 +170,11 @@ let plot_heatbar width height color hbar_axis text_size ticks gradient_path =
   in
   let mins = Pt.zero in
   let maxs = Pt.pt width height in
-  let bar =
-    Cmds.style ~style:heatbar_style ~subcommands:[Cmds.box ~mins ~maxs]
-  in
+  let bar = Cmds.style ~style:heatbar_style (Cmds.box ~mins ~maxs) in
   let origin = Pt.pt (Pt.x maxs) (Pt.y mins) in
   let bar_ticks =
     Frame.ticked_vertical_axis `Right origin height hbar_axis text_size ticks
+    |> Cmds.wrap
   in
   let bar_ticks =
     Cmds.style
@@ -186,9 +185,9 @@ let plot_heatbar width height color hbar_axis text_size ticks gradient_path =
             ~width:None
             ~fill:None
             ~dash:None)
-      ~subcommands:bar_ticks
+      bar_ticks
   in
-  [bar; bar_ticks]
+  Cmds.wrap [bar; bar_ticks]
 
 let plot_internal frame { gradient; blocksize; state; hbar_axis; no_heatbar } =
   let { gradient_path; gradient_steps } = gradient in
@@ -199,7 +198,7 @@ let plot_internal frame { gradient; blocksize; state; hbar_axis; no_heatbar } =
     let len = Array.length rarr in
     let arr = Array1.create int32 c_layout len in
     for i = 0 to len - 1 do
-      arr.{i} <- Style.(to_int (rgb rarr.(i) garr.(i) barr.(i)))
+      arr.{i} <- Color.(to_int (rgb rarr.(i) garr.(i) barr.(i)))
     done ;
     { palette = arr; width = len - 1 }
   in
@@ -208,9 +207,9 @@ let plot_internal frame { gradient; blocksize; state; hbar_axis; no_heatbar } =
     let hmap = plot_heatmap palette state blocksize xdomain ydomain data in
     (* Apply a frame *)
     let (bbox, hmap) =
-      Frame.add_frame frame (Vec.to_array xdomain) (Vec.to_array ydomain) [hmap]
+      Frame.add_frame frame (Vec.to_array xdomain) (Vec.to_array ydomain) hmap
     in
-    if no_heatbar then Viewport.apply viewport [hmap]
+    if no_heatbar then Viewport.apply viewport hmap
     else
       (* Throw in heatbar *)
       let h = Cmds.Bbox.height bbox in
@@ -231,10 +230,8 @@ let plot_internal frame { gradient; blocksize; state; hbar_axis; no_heatbar } =
           ticks
           gradient_path
       in
-      let hbar =
-        Cmds.translate ~v:(Pt.pt (w +. (0.1 *. h)) 0.0) ~subcommands:hbar
-      in
-      Viewport.apply viewport [hbar; hmap]
+      let hbar = Cmds.translate ~v:(Pt.pt (w +. (0.1 *. h)) 0.0) hbar in
+      Viewport.apply viewport (Cmds.wrap [hbar; hmap])
 
 let plot ~(options : options list) =
   let (frame, hmap_opts) =
