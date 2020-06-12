@@ -203,11 +203,12 @@ module Make (V : Vertex_sig) : S with type vertex = V.t = struct
     Table.remove model.state v
 
   let mem_edge (model : 'e t) (v1 : vertex) (v2 : vertex) =
-    assert (Table.mem model.state v1) ;
-    assert (Table.mem model.state v2) ;
-    let (v1, v2) = canonical_order v1 v2 in
-    let state = Table.find model.state v1 in
-    List.exists (fun (v2', _, _) -> V.equal v2 v2') state.neighbours
+    if not (Table.mem model.state v1 && Table.mem model.state v2) then
+      false
+    else
+      let (v1, v2) = canonical_order v1 v2 in
+      let state = Table.find model.state v1 in
+      List.exists (fun (v2', _, _) -> V.equal v2 v2') state.neighbours
 
   let add_edge (model : 'e t) (v1 : vertex) (e : 'e) (v2 : vertex) =
     assert (Table.mem model.state v1) ;

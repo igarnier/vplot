@@ -13,10 +13,9 @@ depends: [
   "cairo2"
   "tsdl"
   "vlayout"
-  "batteries"
-  "owl"
+  "gg"
 ]
 available: [ ocaml-version >= "4.04.1" ]
 descr: "
-Declarative interface to Cairo.
+Declarative interface to Cairo
 "
