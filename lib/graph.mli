@@ -24,6 +24,10 @@ type ('v, 'e) options =
   | `Custom_vertices of 'v draw_vertex
   | `Custom_edges of 'e draw_edge ]
 
+val default_draw_vertex : 'a -> Pt.t -> float -> Cmds.t list -> Cmds.t list
+
+val default_draw_edge : 'a -> Pt.t -> Pt.t -> Cmds.t list -> Cmds.t list
+
 module Make (SM : Spring_model.S) : sig
   val draw_scene :
     obj_pos:Gg.v3 ->
@@ -34,6 +38,14 @@ module Make (SM : Spring_model.S) : sig
       (SM.Table.key -> Vlayout.Pt.t -> float -> Cmds.t list -> Cmds.t list) ->
     draw_edge:('e -> Vlayout.Pt.t -> Vlayout.Pt.t -> Cmds.t list -> Cmds.t list) ->
     Cmds.t list
+
+  val graph_to_spring_model :
+    ('t, SM.vertex, 'e) Graph_sig.impl ->
+    't ->
+    dist:initial_distribution ->
+    stiffness:float ->
+    relax_length:float ->
+    'e SM.t
 
   val plot :
     ('t, SM.vertex, 'e) Graph_sig.impl ->
